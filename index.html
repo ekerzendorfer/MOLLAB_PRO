@@ -74,6 +74,7 @@
                             <option value="ballAndStick">Ball & Stick</option>
                             <option value="stick">Stäbchen</option>
                             <option value="sphere">Kalotten</option>
+                            <option value="line">Skelettformel</option>
                         </select>
                         
                         <div class="flex-1"></div>
@@ -138,11 +139,9 @@
         let basicSdf = ""; let refSdf = "";
         let currentDisplayMode = "basic";
         
-        // Messungen
         let measureMode = false;
         let clickedAtoms = [];
         
-        // Docking & Transform
         let activeTarget = 'basic'; 
         let mouseDockingActive = false;
         let transforms = { basic: { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 }, ref: { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 } };
@@ -163,7 +162,6 @@
             currentSmiles = jsmeApplet.smiles();
             document.getElementById('smilesInput').value = currentSmiles;
             
-            // IUPAC Name holen (PubChem API)
             fetchIUPAC(currentSmiles);
             
             document.getElementById('btnMM').disabled = false;
@@ -177,7 +175,6 @@
             clearMeasurements();
         }
 
-        // --- VERBESSERTE IUPAC ABFRAGE ---
         async function fetchIUPAC(smiles) {
             const container = document.getElementById('iupacContainer');
             const nameEl = document.getElementById('iupacName');
@@ -186,7 +183,6 @@
             
             try {
                 const encodedSmiles = encodeURIComponent(smiles);
-                // PubChem Property API ist deutlich stabiler als NCI Cactus
                 const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/property/IUPACName/JSON`;
                 const response = await fetch(url);
                 if (response.ok) {
@@ -211,10 +207,10 @@
                 if (!response.ok) throw new Error("API Reject");
                 basicSdf = await response.text();
                 currentDisplayMode = "basic";
-                renderModels(true); // Erster Zoom
+                renderModels(true); 
                 document.getElementById('btnRef').disabled = false;
             } catch (e) { 
-                alert("Basis-3D Fehler: NCI Cactus (CORINA) lehnt diese Struktur ab. Oft passiert das bei sterisch extrem gespannten Molekülen oder ungewöhnlichen Doppelbindungen in Ringen, da der Regel-Algorithmus hier an seine Grenzen stößt."); 
+                alert("Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab."); 
             }
         }
 
@@ -227,7 +223,7 @@
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
                 setDisplayMode('overlay');
             } catch (e) { 
-                alert("QM-Referenz Fehler: PubChem hat für diese exakte Struktur (noch) keine vorberechnete 3D-Geometrie in der Datenbank hinterlegt."); 
+                alert("QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt."); 
             }
         }
 
@@ -246,12 +242,10 @@
                 if(mouseDockingActive) toggleMouseDocking(); 
             }
             
-            // WICHTIG: Kamera-Position beibehalten beim Umschalten (autoZoom = false)
             renderModels(false);
             clearMeasurements();
         }
 
-        // --- MATH: SDF Transformation ---
         function transformSDF(sdf, t) {
             if (!sdf) return "";
             let rx = t.rx * Math.PI / 180, ry = t.ry * Math.PI / 180, rz = t.rz * Math.PI / 180;
@@ -283,11 +277,8 @@
             return lines.join('\n');
         }
 
-        // --- RENDER LOGIC WITH VIEW PERSISTENCE ---
         function renderModels(autoZoom = true) {
-            // Aktuellen Kamerawinkel speichern
             let savedView = viewer.getView();
-            
             viewer.clear();
             const style = document.getElementById('styleSelect').value;
             
@@ -295,7 +286,9 @@
                 let c = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
                 if(style === 'ballAndStick') return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
                 if(style === 'stick') return { stick: { radius: 0.25, colorscheme: c } };
-                return { sphere: { scale: 1.0, colorscheme: c } };
+                if(style === 'sphere') return { sphere: { scale: 1.0, colorscheme: c } };
+                if(style === 'line') return { line: { linewidth: 3, colorscheme: c } };
+                return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
             };
 
             let renderBasic = basicSdf ? transformSDF(basicSdf, transforms.basic) : "";
@@ -311,7 +304,6 @@
                 viewer.setStyle({model: mIdx}, getStyle(true));
             }
             
-            // Entweder Kamera zurücksetzen oder zoomen
             if(autoZoom) {
                 viewer.zoomTo();
             } else {
@@ -319,10 +311,9 @@
             }
             
             viewer.render();
-            bindMeasurementClicks(); // Klick-Events neu binden
+            bindMeasurementClicks(); 
         }
 
-        // --- MOUSE DOCKING & SLIDERS ---
         function changeTransformTarget() {
             activeTarget = document.querySelector('input[name="moveTarget"]:checked').value;
             syncSlidersToState();
@@ -379,6 +370,7 @@
                 lastX = e.clientX; lastY = e.clientY;
             });
             window.addEventListener('mouseup', () => isDragging = false);
+            window.addEventListener('touchend', () => isDragging = false); // Für Mobile
             
             glass.addEventListener('mousemove', (e) => {
                 if(!isDragging) return;
@@ -395,6 +387,29 @@
                 syncSlidersToState();
                 renderModels(false);
             });
+            
+            // Touch Support für Mobile
+            glass.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+            }, {passive: true});
+            
+            glass.addEventListener('touchmove', (e) => {
+                if(!isDragging) return;
+                let dx = e.touches[0].clientX - lastX;
+                let dy = e.touches[0].clientY - lastY;
+                lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+
+                let t = transforms[activeTarget];
+                // Auf dem Handy gibt es keine Shift-Taste, wir machen 2-Finger-Touch zum Verschieben
+                if (e.touches.length > 1) {
+                    t.tx += dx * 0.05; t.ty -= dy * 0.05; 
+                } else {
+                    t.ry += dx * 1.5; t.rx += dy * 1.5;
+                }
+                syncSlidersToState();
+                renderModels(false);
+            }, {passive: true});
 
             glass.addEventListener('wheel', (e) => {
                 e.preventDefault();
@@ -405,7 +420,6 @@
             });
         }
 
-        // --- MEASUREMENT LOGIC ---
         function toggleMeasureMode() {
             measureMode = !measureMode;
             const btn = document.getElementById('btnMeasure');
