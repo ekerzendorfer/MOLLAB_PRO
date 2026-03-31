@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molekül-Labor Pro | 3D & Messung</title>
+    <title>Molekül-Labor Pro | 3D-Puzzle & Messung</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
@@ -14,16 +14,19 @@
         #jsme_container { border-radius: 1rem; overflow: hidden; border: 2px solid #cbd5e1; }
         .mode-active { background-color: #3b82f6; color: white; font-weight: 900; border-color: #2563eb; }
         .mode-inactive { background-color: #f1f5f9; color: #64748b; font-weight: 700; border-color: #e2e8f0; }
+        
+        /* Slider Styling für das 3D Puzzle */
+        input[type=range] { accent-color: #3b82f6; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
 
     <div class="max-w-7xl mx-auto px-4 py-6">
         <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex items-center gap-6">
-            <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">📐</div>
+            <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧩</div>
             <div>
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Strukturen & Interaktive Messung</p>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">Messungen & Manuelles 3D-Docking</p>
             </div>
         </header>
 
@@ -41,8 +44,8 @@
 
                 <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
                     <h3 class="text-blue-400 font-black uppercase text-sm mb-4">Pipeline</h3>
-                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600">▶ 2. Basis-3D (Kraftfeld)</button>
-                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600">▶ 3. QM-Referenz</button>
+                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all">▶ 2. Basis-3D (Kraftfeld)</button>
+                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all">▶ 3. QM-Referenz</button>
                 </div>
             </div>
 
@@ -52,8 +55,8 @@
                         <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
                         <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
                             <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-3 py-2 text-xs uppercase">Basis</button>
-                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase">QM-Ref</button>
-                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase">Overlay</button>
+                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase border-l">QM-Ref</button>
+                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase border-l">Overlay</button>
                         </div>
                     </div>
                     
@@ -68,13 +71,45 @@
                         
                         <div class="flex-1"></div>
 
-                        <button id="btnMeasure" onclick="toggleMeasureMode()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm uppercase transition-colors">
-                            📏 Messen: AUS
-                        </button>
-                        <button onclick="clearMeasurements()" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg font-bold text-sm uppercase">🗑 Messungen löschen</button>
+                        <div class="flex items-center gap-2 bg-blue-100 p-1 rounded-lg border border-blue-200">
+                            <select id="measureType" class="bg-transparent text-blue-900 font-bold text-xs uppercase outline-none cursor-pointer">
+                                <option value="dist">Abstand</option>
+                                <option value="angle">Winkel</option>
+                            </select>
+                            <button id="btnMeasure" onclick="toggleMeasureMode()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded font-bold text-xs uppercase transition-colors">
+                                Messen: AUS
+                            </button>
+                            <button onclick="clearMeasurements()" class="bg-red-500 hover:bg-red-400 text-white px-2 py-1.5 rounded font-bold text-xs uppercase">🗑</button>
+                        </div>
                     </div>
-                    
-                    <p id="measureHint" class="hidden text-xs text-blue-600 mt-2 font-bold text-center">Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.</p>
+
+                    <div id="alignmentPanel" class="hidden mt-4 p-5 bg-indigo-950 rounded-2xl border border-indigo-800 text-indigo-100 shadow-inner">
+                        <div class="flex justify-between items-center mb-4 border-b border-indigo-800 pb-2">
+                            <h4 class="font-black uppercase text-sm text-yellow-400 tracking-widest">Manuelles 3D-Docking</h4>
+                            <div class="flex gap-2 text-xs font-bold uppercase">
+                                <span>Bewege:</span>
+                                <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="moveTarget" value="basic" checked onchange="changeTransformTarget()"> Basis</label>
+                                <label class="cursor-pointer flex items-center gap-1"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> QM-Ref</label>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black">Verschieben (X, Y, Z)</span>
+                                <input type="range" id="sl_tx" min="-10" max="10" step="0.1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <input type="range" id="sl_ty" min="-10" max="10" step="0.1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <input type="range" id="sl_tz" min="-10" max="10" step="0.1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="space-y-2">
+                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black">Rotieren (X, Y, Z)</span>
+                                <input type="range" id="sl_rx" min="0" max="360" step="1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <input type="range" id="sl_ry" min="0" max="360" step="1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <input type="range" id="sl_rz" min="0" max="360" step="1" value="0" oninput="updateTransform()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                        </div>
+                        <button onclick="resetTransforms()" class="mt-4 w-full bg-indigo-800 hover:bg-indigo-700 py-2 rounded-lg text-xs font-black uppercase tracking-widest">Positionen Zurücksetzen</button>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -91,6 +126,13 @@
         let measureMode = false;
         let clickedAtoms = [];
         let measurementLabels = [];
+
+        // Transform Variables for Overlay Docking
+        let activeTarget = 'basic'; 
+        let transforms = {
+            basic: { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 },
+            ref:   { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 }
+        };
 
         function jsmeOnLoad() {
             jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {"options" : "query,nocanonize,hydrogens"});
@@ -110,6 +152,9 @@
             document.getElementById('btnRef').disabled = true;
             basicSdf = ""; refSdf = "";
             document.getElementById('modelToggleGroup').classList.add('hidden');
+            document.getElementById('alignmentPanel').classList.add('hidden');
+            
+            resetTransforms();
             viewer.clear(); viewer.render();
             clearMeasurements();
         }
@@ -143,13 +188,85 @@
                 document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1)).className = 
                     m === mode ? "mode-toggle-btn mode-active px-3 py-2 text-xs uppercase" : "mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase";
             });
+            
+            if (mode === 'overlay') {
+                document.getElementById('alignmentPanel').classList.remove('hidden');
+                syncSlidersToState();
+            } else {
+                document.getElementById('alignmentPanel').classList.add('hidden');
+            }
+            
             renderModels();
-            clearMeasurements(); // Wechsel löscht Messungen
+            clearMeasurements();
         }
 
-        function renderModels() {
+        // --- MATH: SDF Transformation ---
+        function transformSDF(sdf, t) {
+            if (!sdf) return "";
+            let rx = t.rx * Math.PI / 180, ry = t.ry * Math.PI / 180, rz = t.rz * Math.PI / 180;
+            let cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry), cz = Math.cos(rz), sz = Math.sin(rz);
+            
+            // Rotationsmatrix (Z * Y * X)
+            let m00 = cy*cz, m01 = sx*sy*cz - cx*sz, m02 = cx*sy*cz + sx*sz;
+            let m10 = cy*sz, m11 = sx*sy*sz + cx*cz, m12 = cx*sy*sz - sx*cz;
+            let m20 = -sy,   m21 = sx*cy,            m22 = cx*cy;
+
+            let lines = sdf.split('\n');
+            if(lines.length < 4) return sdf;
+            let numAtoms = parseInt(lines[3].substring(0,3));
+            
+            for(let i=0; i<numAtoms; i++) {
+                let idx = 4+i;
+                let line = lines[idx];
+                if(line.length < 30) continue;
+                
+                let x = parseFloat(line.substring(0,10));
+                let y = parseFloat(line.substring(10,20));
+                let z = parseFloat(line.substring(20,30));
+
+                let nx = m00*x + m01*y + m02*z + t.tx;
+                let ny = m10*x + m11*y + m12*z + t.ty;
+                let nz = m20*x + m21*y + m22*z + t.tz;
+
+                lines[idx] = nx.toFixed(4).padStart(10, ' ') + ny.toFixed(4).padStart(10, ' ') + nz.toFixed(4).padStart(10, ' ') + line.substring(30);
+            }
+            return lines.join('\n');
+        }
+
+        // --- MANUAL ALIGNMENT CONTROLS ---
+        function changeTransformTarget() {
+            activeTarget = document.querySelector('input[name="moveTarget"]:checked').value;
+            syncSlidersToState();
+        }
+
+        function syncSlidersToState() {
+            let t = transforms[activeTarget];
+            document.getElementById('sl_tx').value = t.tx; document.getElementById('sl_ty').value = t.ty; document.getElementById('sl_tz').value = t.tz;
+            document.getElementById('sl_rx').value = t.rx; document.getElementById('sl_ry').value = t.ry; document.getElementById('sl_rz').value = t.rz;
+        }
+
+        function updateTransform() {
+            let t = transforms[activeTarget];
+            t.tx = parseFloat(document.getElementById('sl_tx').value);
+            t.ty = parseFloat(document.getElementById('sl_ty').value);
+            t.tz = parseFloat(document.getElementById('sl_tz').value);
+            t.rx = parseFloat(document.getElementById('sl_rx').value);
+            t.ry = parseFloat(document.getElementById('sl_ry').value);
+            t.rz = parseFloat(document.getElementById('sl_rz').value);
+            renderModels(false); // Render without re-zooming to keep camera stable
+        }
+
+        function resetTransforms() {
+            transforms = { basic: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0}, ref: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0} };
+            syncSlidersToState();
+            renderModels();
+        }
+
+        // --- RENDER LOGIC ---
+        function renderModels(autoZoom = true) {
             viewer.clear();
             const style = document.getElementById('styleSelect').value;
+            
             let getStyle = (isRef) => {
                 let c = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
                 if(style === 'ballAndStick') return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
@@ -157,39 +274,41 @@
                 return { sphere: { scale: 1.0, colorscheme: c } };
             };
 
-            if (basicSdf && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(basicSdf, "sdf");
+            let renderBasic = basicSdf ? transformSDF(basicSdf, transforms.basic) : "";
+            let renderRef = refSdf ? transformSDF(refSdf, transforms.ref) : "";
+
+            if (renderBasic && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
+                viewer.addModel(renderBasic, "sdf");
                 viewer.setStyle({model: 0}, getStyle(false));
             }
-            if (refSdf && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(refSdf, "sdf");
-                let mIdx = (currentDisplayMode === 'overlay' && basicSdf) ? 1 : 0;
+            if (renderRef && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
+                viewer.addModel(renderRef, "sdf");
+                let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
                 viewer.setStyle({model: mIdx}, getStyle(true));
             }
-            viewer.zoomTo();
+            
+            if(autoZoom) viewer.zoomTo();
             viewer.render();
+            
+            // Klick-Events für Messungen müssen nach jedem Render neu gesetzt werden!
             setupMeasurementClick();
         }
 
-        function updateViewerStyle() { renderModels(); }
+        function updateViewerStyle() { renderModels(false); }
 
         // --- MEASUREMENT LOGIC ---
         function toggleMeasureMode() {
             measureMode = !measureMode;
             const btn = document.getElementById('btnMeasure');
-            const hint = document.getElementById('measureHint');
-            
             if(measureMode) {
-                btn.innerText = "📏 Messen: EIN";
-                btn.classList.replace('bg-slate-200', 'bg-green-200');
-                btn.classList.replace('text-slate-700', 'text-green-800');
-                hint.classList.remove('hidden');
+                btn.innerText = "Messen: EIN";
+                btn.classList.replace('bg-blue-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-blue-500', 'hover:bg-green-500');
             } else {
-                btn.innerText = "📏 Messen: AUS";
-                btn.classList.replace('bg-green-200', 'bg-slate-200');
-                btn.classList.replace('text-green-800', 'text-slate-700');
-                hint.classList.add('hidden');
-                clickedAtoms = [];
+                btn.innerText = "Messen: AUS";
+                btn.classList.replace('bg-green-600', 'bg-blue-600');
+                btn.classList.replace('hover:bg-green-500', 'hover:bg-blue-500');
+                clearMeasurements();
             }
             setupMeasurementClick();
         }
@@ -202,44 +321,42 @@
         }
 
         function setupMeasurementClick() {
-            viewer.setClickable({}, measureMode, function(atom, viewer, event, container) {
+            // Erst alte Listener löschen, dann neu setzen
+            viewer.setClickable({}, measureMode, function(atom, v, event, container) {
                 if(!measureMode) return;
                 
+                let mType = document.getElementById('measureType').value;
                 clickedAtoms.push(atom);
                 
-                // Highlight clicked atom
+                // Atom markieren
                 let sphere = viewer.addSphere({ center: {x: atom.x, y: atom.y, z: atom.z}, radius: 0.4, color: 'yellow', alpha: 0.6 });
                 measurementLabels.push(sphere);
                 viewer.render();
 
-                if (clickedAtoms.length === 2) {
-                    // Distance
+                if (mType === 'dist' && clickedAtoms.length === 2) {
                     let a1 = clickedAtoms[0], a2 = clickedAtoms[1];
                     let dist = Math.sqrt(Math.pow(a2.x-a1.x, 2) + Math.pow(a2.y-a1.y, 2) + Math.pow(a2.z-a1.z, 2));
-                    
                     let line = viewer.addCylinder({ start: {x:a1.x, y:a1.y, z:a1.z}, end: {x:a2.x, y:a2.y, z:a2.z}, radius: 0.05, color: 'yellow', dashed: true });
-                    let label = viewer.addLabel(dist.toFixed(2) + " Å", { position: {x: (a1.x+a2.x)/2, y: (a1.y+a2.y)/2, z: (a1.z+a2.z)/2}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
-                    
+                    let label = viewer.addLabel(dist.toFixed(3) + " Å", { position: {x: (a1.x+a2.x)/2, y: (a1.y+a2.y)/2, z: (a1.z+a2.z)/2}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
                     measurementLabels.push(line, label);
+                    clickedAtoms = []; 
                     viewer.render();
                 } 
-                else if (clickedAtoms.length === 3) {
-                    // Angle
-                    let a1 = clickedAtoms[0], a2 = clickedAtoms[1], a3 = clickedAtoms[2];
-                    
+                else if (mType === 'angle' && clickedAtoms.length === 3) {
+                    let a1 = clickedAtoms[0], a2 = clickedAtoms[1], a3 = clickedAtoms[2]; // a2 is center
                     let v1 = {x: a1.x-a2.x, y: a1.y-a2.y, z: a1.z-a2.z};
                     let v2 = {x: a3.x-a2.x, y: a3.y-a2.y, z: a3.z-a2.z};
-                    
                     let dot = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
                     let mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y + v1.z*v1.z);
                     let mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
                     let angle = Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
                     
-                    let line = viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a3.x, y:a3.y, z:a3.z}, radius: 0.05, color: 'yellow', dashed: true });
+                    let line1 = viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a1.x, y:a1.y, z:a1.z}, radius: 0.05, color: 'yellow', dashed: true });
+                    let line2 = viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a3.x, y:a3.y, z:a3.z}, radius: 0.05, color: 'yellow', dashed: true });
                     let label = viewer.addLabel(angle.toFixed(1) + "°", { position: {x: a2.x, y: a2.y+0.5, z: a2.z}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
                     
-                    measurementLabels.push(line, label);
-                    clickedAtoms = []; // Reset nach Winkel
+                    measurementLabels.push(line1, line2, label);
+                    clickedAtoms = []; 
                     viewer.render();
                 }
             });
