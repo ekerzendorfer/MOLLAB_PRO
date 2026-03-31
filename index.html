@@ -3,23 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molekül-Labor Pro | 3D-Optimierung</title>
+    <title>Molekül-Labor Pro | 3D & Messung</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
-    
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
-
     <style>
-        .step-card { transition: all 0.3s ease; }
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
         .viewer-container { position: relative; width: 100%; height: 400px; background-color: #0f172a; border-radius: 1rem; overflow: hidden; }
         #jsme_container { border-radius: 1rem; overflow: hidden; border: 2px solid #cbd5e1; }
-        
-        /* Custom Toggle für den Viewer-Modus */
-        .mode-toggle-btn { transition: all 0.2s; }
         .mode-active { background-color: #3b82f6; color: white; font-weight: 900; border-color: #2563eb; }
         .mode-inactive { background-color: #f1f5f9; color: #64748b; font-weight: 700; border-color: #e2e8f0; }
     </style>
@@ -28,432 +20,229 @@
 
     <div class="max-w-7xl mx-auto px-4 py-6">
         <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex items-center gap-6">
-            <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧬</div>
+            <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">📐</div>
             <div>
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D ➔ QM-Referenz ➔ Perfektes Overlay</p>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Strukturen & Interaktive Messung</p>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
             <div class="lg:col-span-5 space-y-6">
-                
-                <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
+                <div id="step1" class="bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
                     <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
-                    <p class="text-xs text-slate-500 mb-2">Zeichne eine 2D-Struktur (Tipp: Nutze den 🧹 Besen zur automatischen 2D-Optimierung).</p>
                     <div id="jsme_container" class="w-full h-[300px] bg-slate-50"></div>
-                    
-                    <div class="mt-4 space-y-2">
-                        <div class="flex gap-2">
-                            <button onclick="clean2D()" title="2D Struktur aufräumen" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 transition-colors text-xl">🧹</button>
-                            <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" placeholder="SMILES Code..." readonly>
-                            <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors uppercase tracking-widest text-xs">SMILES holen</button>
-                        </div>
-                        
-                        <div id="iupacContainer" class="hidden bg-slate-100 p-3 rounded-xl border border-slate-200">
-                            <span class="text-[10px] font-black text-slate-400 uppercase block mb-1">IUPAC Name:</span>
-                            <span id="iupacName" class="font-mono font-bold text-blue-800 text-sm">Lädt...</span>
-                        </div>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="clean2D()" title="2D Struktur aufräumen" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 text-xl">🧹</button>
+                        <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" readonly>
+                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 uppercase text-xs">Start</button>
                     </div>
                 </div>
 
                 <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
-                    <h3 class="text-blue-400 font-black uppercase text-sm mb-4 tracking-widest">Simulations-Pipeline</h3>
-                    
-                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 2. Basis-3D (Kraftfeld)
-                    </button>
-                    
-                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 3. QM-Referenz (PubChem)
-                    </button>
+                    <h3 class="text-blue-400 font-black uppercase text-sm mb-4">Pipeline</h3>
+                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600">▶ 2. Basis-3D (Kraftfeld)</button>
+                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600">▶ 3. QM-Referenz</button>
                 </div>
             </div>
 
             <div class="lg:col-span-7">
                 <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col">
-                    
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+                    <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
-                        
                         <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
-                            <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-3 py-2 text-xs uppercase tracking-widest border-r">Basis</button>
-                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest border-r">QM-Ref</button>
-                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest">Overlay</button>
+                            <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-3 py-2 text-xs uppercase">Basis</button>
+                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase">QM-Ref</button>
+                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase">Overlay</button>
                         </div>
                     </div>
                     
                     <div id="viewer3D" class="viewer-container flex-1 border-4 border-slate-900"></div>
                     
                     <div class="mt-4 flex flex-wrap gap-4 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Darstellung:</label>
-                        <select id="styleSelect" onchange="updateViewerStyle()" class="bg-white border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 font-bold outline-none cursor-pointer">
+                        <select id="styleSelect" onchange="updateViewerStyle()" class="bg-white border border-slate-300 text-sm rounded-lg p-2 font-bold outline-none">
                             <option value="ballAndStick">Ball & Stick</option>
                             <option value="stick">Stäbchen</option>
                             <option value="sphere">Kalottenmodell</option>
                         </select>
                         
                         <div class="flex-1"></div>
-                        
-                        <button id="btnRotate" onclick="toggleRotation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm uppercase tracking-widest transition-colors flex items-center gap-2 border border-slate-300">
-                            <span id="rotIcon">▶</span> Rotation
+
+                        <button id="btnMeasure" onclick="toggleMeasureMode()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm uppercase transition-colors">
+                            📏 Messen: AUS
                         </button>
+                        <button onclick="clearMeasurements()" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg font-bold text-sm uppercase">🗑 Messungen löschen</button>
                     </div>
+                    
+                    <p id="measureHint" class="hidden text-xs text-blue-600 mt-2 font-bold text-center">Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- GLOBALE VARIABLEN ---
         let jsmeApplet = null;
         let viewer = null;
         let currentSmiles = "";
+        let basicSdf = ""; let refSdf = "";
+        let currentDisplayMode = "basic";
         
-        let basicSdf = "";
-        let refSdf = "";
-        let refSdfAligned = ""; // Gespeicherte, per Kabsch-Algorithmus ausgerichtete Referenz
-        
-        let currentDisplayMode = "basic"; // 'basic', 'ref', 'overlay'
-        let isRotating = false;
+        // Measurement Variables
+        let measureMode = false;
+        let clickedAtoms = [];
+        let measurementLabels = [];
 
-        // --- 1. INITIALISIERUNG ---
         function jsmeOnLoad() {
-            jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {
-                "options" : "query,nocanonize,hydrogens"
-            });
+            jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {"options" : "query,nocanonize,hydrogens"});
         }
 
         window.onload = () => {
-            let element = document.getElementById('viewer3D');
-            viewer = $3Dmol.createViewer(element, { backgroundColor: '#0f172a' });
+            viewer = $3Dmol.createViewer(document.getElementById('viewer3D'), { backgroundColor: '#0f172a' });
         };
 
-        // --- 2. WORKFLOW LOGIK ---
-
-        function clean2D() {
-            if (!jsmeApplet) return;
-            let smiles = jsmeApplet.smiles();
-            if (smiles) {
-                jsmeApplet.readGenericMolecularInput(smiles); // Erzwingt 2D-Neuberechnung
-            }
-        }
+        function clean2D() { if (jsmeApplet && jsmeApplet.smiles()) jsmeApplet.readGenericMolecularInput(jsmeApplet.smiles()); }
 
         function getSmiles() {
-            if (!jsmeApplet) return;
+            if (!jsmeApplet || !jsmeApplet.smiles()) return;
             currentSmiles = jsmeApplet.smiles();
-            if (!currentSmiles) {
-                alert("Bitte zeichne zuerst ein Molekül!");
-                return;
-            }
-            
             document.getElementById('smilesInput').value = currentSmiles;
-            
-            // IUPAC Name holen
-            fetchIUPAC(currentSmiles);
-            
-            // Buttons freischalten
             document.getElementById('btnMM').disabled = false;
             document.getElementById('btnRef').disabled = true;
-            
-            // Reset Modelle
-            basicSdf = "";
-            refSdf = "";
-            refSdfAligned = "";
+            basicSdf = ""; refSdf = "";
             document.getElementById('modelToggleGroup').classList.add('hidden');
-            
-            viewer.clear();
-            viewer.render();
-            
-            document.getElementById('step1').classList.remove('border-blue-500', 'step-active');
-            document.getElementById('step1').classList.add('border-transparent');
-            document.getElementById('btnMM').classList.replace('bg-slate-700', 'bg-blue-600');
-            document.getElementById('btnMM').classList.replace('text-slate-300', 'text-white');
-        }
-
-        async function fetchIUPAC(smiles) {
-            const container = document.getElementById('iupacContainer');
-            const nameEl = document.getElementById('iupacName');
-            container.classList.remove('hidden');
-            nameEl.innerText = "Sucht IUPAC-Namen...";
-            
-            try {
-                const encodedSmiles = encodeURIComponent(smiles);
-                const url = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/iupac_name`;
-                const response = await fetch(url);
-                if (response.ok) {
-                    nameEl.innerText = await response.text();
-                } else {
-                    nameEl.innerText = "Kein Standardname gefunden.";
-                }
-            } catch (e) {
-                nameEl.innerText = "Abfrage fehlgeschlagen.";
-            }
+            viewer.clear(); viewer.render();
+            clearMeasurements();
         }
 
         async function fetchBasic3D() {
             if (!currentSmiles) return;
-            
             try {
-                const encodedSmiles = encodeURIComponent(currentSmiles);
-                const url = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/file?format=sdf&get3d=true`;
-                
+                const url = `https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(currentSmiles)}/file?format=sdf&get3d=true`;
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("Fehler bei der 3D-Generierung");
-                
                 basicSdf = await response.text();
-                
                 currentDisplayMode = "basic";
                 renderModels();
-                
                 document.getElementById('btnRef').disabled = false;
-                document.getElementById('btnMM').classList.replace('bg-blue-600', 'bg-slate-700');
-                document.getElementById('btnMM').classList.replace('text-white', 'text-slate-300');
-                document.getElementById('btnRef').classList.replace('bg-slate-700', 'bg-green-600');
-                document.getElementById('btnRef').classList.replace('text-slate-300', 'text-white');
-
-            } catch (e) {
-                console.error(e);
-                alert("NCI Cactus konnte dieses Molekül nicht verarbeiten.");
-            }
+            } catch (e) { alert("NCI Cactus Fehler."); }
         }
 
         async function fetchQMReference() {
             if (!currentSmiles) return;
-            
             try {
-                const encodedSmiles = encodeURIComponent(currentSmiles);
-                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/SDF?record_type=3d`;
-                
+                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(currentSmiles)}/SDF?record_type=3d`;
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("PubChem hat keine 3D-Referenz");
-                
                 refSdf = await response.text();
-                
-                // Alignment durchführen
-                refSdfAligned = alignSDFs(basicSdf, refSdf);
-                
-                // Overlay Modus aktivieren
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
                 setDisplayMode('overlay');
-                
-                document.getElementById('btnRef').classList.replace('bg-green-600', 'bg-slate-700');
-                document.getElementById('btnRef').classList.replace('text-white', 'text-slate-300');
-
-            } catch (e) {
-                console.error(e);
-                alert("PubChem hat für dieses Molekül keine 3D-Struktur hinterlegt.");
-            }
+            } catch (e) { alert("PubChem Fehler."); }
         }
 
-        // --- 3. VIEWER & OVERLAY LOGIK ---
-        
         function setDisplayMode(mode) {
             currentDisplayMode = mode;
-            
-            // Buttons stylen
             ['basic', 'ref', 'overlay'].forEach(m => {
-                let btn = document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1));
-                if (m === mode) {
-                    btn.className = "mode-toggle-btn mode-active px-3 py-2 text-xs uppercase tracking-widest border-r";
-                } else {
-                    btn.className = "mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest border-r";
-                }
+                document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1)).className = 
+                    m === mode ? "mode-toggle-btn mode-active px-3 py-2 text-xs uppercase" : "mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase";
             });
-            
             renderModels();
-        }
-
-        function getStyleObject(isRef) {
-            const styleVal = document.getElementById('styleSelect').value;
-            let styleObj = {};
-            
-            // Farb-Schema: Im Overlay wird die QM Referenz Cyan eingefärbt
-            let cScheme = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
-
-            if (styleVal === "ballAndStick") {
-                styleObj = { stick: { radius: 0.15, colorscheme: cScheme }, sphere: { scale: 0.3, colorscheme: cScheme } };
-            } else if (styleVal === "stick") {
-                styleObj = { stick: { radius: 0.25, colorscheme: cScheme } };
-            } else if (styleVal === "sphere") {
-                styleObj = { sphere: { scale: 1.0, colorscheme: cScheme } };
-            }
-            
-            return styleObj;
-        }
-
-        function updateViewerStyle() {
-            renderModels();
+            clearMeasurements(); // Wechsel löscht Messungen
         }
 
         function renderModels() {
             viewer.clear();
-            
-            // Modell 1: Basis
+            const style = document.getElementById('styleSelect').value;
+            let getStyle = (isRef) => {
+                let c = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
+                if(style === 'ballAndStick') return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
+                if(style === 'stick') return { stick: { radius: 0.25, colorscheme: c } };
+                return { sphere: { scale: 1.0, colorscheme: c } };
+            };
+
             if (basicSdf && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(basicSdf, "sdf");
-                viewer.setStyle({model: 0}, getStyleObject(false));
+                viewer.setStyle({model: 0}, getStyle(false));
             }
-            
-            // Modell 2: QM Referenz
             if (refSdf && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
-                let sdfToRender = (currentDisplayMode === 'overlay') ? refSdfAligned : refSdf;
-                viewer.addModel(sdfToRender, "sdf");
-                let modelIndex = (currentDisplayMode === 'overlay' && basicSdf) ? 1 : 0;
-                viewer.setStyle({model: modelIndex}, getStyleObject(true));
+                viewer.addModel(refSdf, "sdf");
+                let mIdx = (currentDisplayMode === 'overlay' && basicSdf) ? 1 : 0;
+                viewer.setStyle({model: mIdx}, getStyle(true));
             }
-            
             viewer.zoomTo();
-            if(isRotating) { viewer.spin("y", 1); } else { viewer.spin(false); }
+            viewer.render();
+            setupMeasurementClick();
+        }
+
+        function updateViewerStyle() { renderModels(); }
+
+        // --- MEASUREMENT LOGIC ---
+        function toggleMeasureMode() {
+            measureMode = !measureMode;
+            const btn = document.getElementById('btnMeasure');
+            const hint = document.getElementById('measureHint');
+            
+            if(measureMode) {
+                btn.innerText = "📏 Messen: EIN";
+                btn.classList.replace('bg-slate-200', 'bg-green-200');
+                btn.classList.replace('text-slate-700', 'text-green-800');
+                hint.classList.remove('hidden');
+            } else {
+                btn.innerText = "📏 Messen: AUS";
+                btn.classList.replace('bg-green-200', 'bg-slate-200');
+                btn.classList.replace('text-green-800', 'text-slate-700');
+                hint.classList.add('hidden');
+                clickedAtoms = [];
+            }
+            setupMeasurementClick();
+        }
+
+        function clearMeasurements() {
+            clickedAtoms = [];
+            measurementLabels.forEach(shape => viewer.removeShape(shape));
+            measurementLabels = [];
             viewer.render();
         }
 
-        function toggleRotation() {
-            isRotating = !isRotating;
-            const btn = document.getElementById('btnRotate');
-            const icon = document.getElementById('rotIcon');
-            
-            if (isRotating) {
-                viewer.spin("y", 1);
-                btn.classList.replace('bg-slate-200', 'bg-blue-200');
-                btn.classList.replace('text-slate-700', 'text-blue-800');
-                btn.classList.add('border-blue-400');
-                icon.innerText = "⏸";
-            } else {
-                viewer.spin(false);
-                btn.classList.replace('bg-blue-200', 'bg-slate-200');
-                btn.classList.replace('text-blue-800', 'text-slate-700');
-                btn.classList.remove('border-blue-400');
-                icon.innerText = "▶";
-            }
-        }
+        function setupMeasurementClick() {
+            viewer.setClickable({}, measureMode, function(atom, viewer, event, container) {
+                if(!measureMode) return;
+                
+                clickedAtoms.push(atom);
+                
+                // Highlight clicked atom
+                let sphere = viewer.addSphere({ center: {x: atom.x, y: atom.y, z: atom.z}, radius: 0.4, color: 'yellow', alpha: 0.6 });
+                measurementLabels.push(sphere);
+                viewer.render();
 
-        // --- 4. KABSCH-ALGORITHMUS ZUR 3D ÜBERLAGERUNG ---
-        
-        function extractHeavyAtomsSDF(sdf) {
-            let lines = sdf.split('\n');
-            let atoms = [];
-            if(lines.length < 4) return atoms;
-            let numAtoms = parseInt(lines[3].substring(0, 3));
-            for (let i = 0; i < numAtoms; i++) {
-                let line = lines[4 + i];
-                let elem = line.substring(31, 34).trim();
-                if (elem !== 'H') {
-                    atoms.push({
-                        x: parseFloat(line.substring(0, 10)),
-                        y: parseFloat(line.substring(10, 20)),
-                        z: parseFloat(line.substring(20, 30)),
-                        elem: elem
-                    });
+                if (clickedAtoms.length === 2) {
+                    // Distance
+                    let a1 = clickedAtoms[0], a2 = clickedAtoms[1];
+                    let dist = Math.sqrt(Math.pow(a2.x-a1.x, 2) + Math.pow(a2.y-a1.y, 2) + Math.pow(a2.z-a1.z, 2));
+                    
+                    let line = viewer.addCylinder({ start: {x:a1.x, y:a1.y, z:a1.z}, end: {x:a2.x, y:a2.y, z:a2.z}, radius: 0.05, color: 'yellow', dashed: true });
+                    let label = viewer.addLabel(dist.toFixed(2) + " Å", { position: {x: (a1.x+a2.x)/2, y: (a1.y+a2.y)/2, z: (a1.z+a2.z)/2}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
+                    
+                    measurementLabels.push(line, label);
+                    viewer.render();
+                } 
+                else if (clickedAtoms.length === 3) {
+                    // Angle
+                    let a1 = clickedAtoms[0], a2 = clickedAtoms[1], a3 = clickedAtoms[2];
+                    
+                    let v1 = {x: a1.x-a2.x, y: a1.y-a2.y, z: a1.z-a2.z};
+                    let v2 = {x: a3.x-a2.x, y: a3.y-a2.y, z: a3.z-a2.z};
+                    
+                    let dot = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+                    let mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y + v1.z*v1.z);
+                    let mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
+                    let angle = Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
+                    
+                    let line = viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a3.x, y:a3.y, z:a3.z}, radius: 0.05, color: 'yellow', dashed: true });
+                    let label = viewer.addLabel(angle.toFixed(1) + "°", { position: {x: a2.x, y: a2.y+0.5, z: a2.z}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
+                    
+                    measurementLabels.push(line, label);
+                    clickedAtoms = []; // Reset nach Winkel
+                    viewer.render();
                 }
-            }
-            return atoms;
-        }
-
-        function extractAllAtomsSDF(sdf) {
-            let lines = sdf.split('\n');
-            let atoms = [];
-            if(lines.length < 4) return atoms;
-            let numAtoms = parseInt(lines[3].substring(0, 3));
-            for (let i = 0; i < numAtoms; i++) {
-                let line = lines[4 + i];
-                atoms.push({
-                    x: parseFloat(line.substring(0, 10)),
-                    y: parseFloat(line.substring(10, 20)),
-                    z: parseFloat(line.substring(20, 30))
-                });
-            }
-            return atoms;
-        }
-
-        function getCentroid(atoms) {
-            let cx = 0, cy = 0, cz = 0;
-            atoms.forEach(a => { cx+=a.x; cy+=a.y; cz+=a.z; });
-            let n = atoms.length || 1;
-            return { x: cx/n, y: cy/n, z: cz/n };
-        }
-
-        function transformSDF(sdf, c1, c2, R) {
-            let lines = sdf.split('\n');
-            if (lines.length < 4) return sdf;
-            
-            let numAtoms = parseInt(lines[3].substring(0, 3));
-            
-            for (let i = 0; i < numAtoms; i++) {
-                let lineIdx = 4 + i;
-                let line = lines[lineIdx];
-                if (line.length < 30) continue; 
-                
-                let x = parseFloat(line.substring(0, 10));
-                let y = parseFloat(line.substring(10, 20));
-                let z = parseFloat(line.substring(20, 30));
-                
-                // 1. Zum Ursprung verschieben
-                x -= c2.x; y -= c2.y; z -= c2.z;
-                
-                // 2. Rotieren
-                let nx = R[0][0]*x + R[0][1]*y + R[0][2]*z;
-                let ny = R[1][0]*x + R[1][1]*y + R[1][2]*z;
-                let nz = R[2][0]*x + R[2][1]*y + R[2][2]*z;
-                
-                // 3. Zum Ziel-Schwerpunkt verschieben
-                nx += c1.x; ny += c1.y; nz += c1.z;
-                
-                // Formatieren
-                let sx = nx.toFixed(4).padStart(10, ' ');
-                let sy = ny.toFixed(4).padStart(10, ' ');
-                let sz = nz.toFixed(4).padStart(10, ' ');
-                
-                lines[lineIdx] = sx + sy + sz + line.substring(30);
-            }
-            return lines.join('\n');
-        }
-
-        function alignSDFs(sdfBase, sdfMove) {
-            try {
-                let heavy1 = extractHeavyAtomsSDF(sdfBase);
-                let heavy2 = extractHeavyAtomsSDF(sdfMove);
-                
-                // Fallback: Nur Schwerpunkte ausrichten, falls Atomanzahl divergiert
-                if(heavy1.length !== heavy2.length || heavy1.length === 0) {
-                    let all1 = extractAllAtomsSDF(sdfBase);
-                    let all2 = extractAllAtomsSDF(sdfMove);
-                    let c1 = getCentroid(all1);
-                    let c2 = getCentroid(all2);
-                    let R_ident = [[1,0,0],[0,1,0],[0,0,1]];
-                    return transformSDF(sdfMove, c1, c2, R_ident);
-                }
-                
-                let c1 = getCentroid(heavy1);
-                let c2 = getCentroid(heavy2);
-                
-                let P = heavy1.map(a => [a.x-c1.x, a.y-c1.y, a.z-c1.z]);
-                let Q = heavy2.map(a => [a.x-c2.x, a.y-c2.y, a.z-c2.z]);
-                
-                let H = [[0,0,0],[0,0,0],[0,0,0]];
-                for(let i=0; i<P.length; i++) {
-                    for(let r=0; r<3; r++) {
-                        for(let c=0; c<3; c++) {
-                            H[r][c] += P[i][r] * Q[i][c];
-                        }
-                    }
-                }
-                
-                // Singulärwertzerlegung (SVD) via numeric.js
-                let svd = numeric.svd(H);
-                let R_temp = numeric.dot(svd.V, numeric.transpose(svd.U));
-                let det = numeric.det(R_temp);
-                
-                // Spiegelungen korrigieren
-                let E = [[1,0,0],[0,1,0],[0,0,det]];
-                let R = numeric.dot(numeric.dot(svd.V, E), numeric.transpose(svd.U));
-                
-                return transformSDF(sdfMove, c1, c2, R);
-            } catch(e) {
-                console.error("Alignment fehlgeschlagen:", e);
-                return sdfMove; // Fallback: Unbearbeitetes Modell zurückgeben
-            }
+            });
         }
     </script>
 </body>
