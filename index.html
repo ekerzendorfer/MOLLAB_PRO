@@ -9,8 +9,6 @@
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
     
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
-    
-    <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
 
     <style>
         .step-card { transition: all 0.3s ease; }
@@ -26,41 +24,33 @@
             <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧬</div>
             <div>
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ 3D Aufbau ➔ Kraftfeld ➔ QM-Referenz</p>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D (Kraftfeld) ➔ QM-Referenz</p>
             </div>
         </header>
-
-        <div id="statusBanner" class="hidden w-full bg-blue-100 text-blue-800 p-4 rounded-xl mb-6 font-bold text-center border border-blue-300">
-            Initialisiere Chemie-Engine...
-        </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
             <div class="lg:col-span-5 space-y-6">
                 
-                <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-transparent step-active">
+                <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
                     <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
-                    <p class="text-xs text-slate-500 mb-4">Zeichne eine 2D-Struktur (oder wähle eine Vorlage im Editor).</p>
+                    <p class="text-xs text-slate-500 mb-4">Zeichne eine 2D-Struktur oder nutze die Vorlagen.</p>
                     <div id="jsme_container" class="w-full h-[300px] bg-slate-50"></div>
                     <div class="mt-4 flex gap-2">
                         <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-sm" placeholder="SMILES Code..." readonly>
-                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500">SMILES holen</button>
+                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors">SMILES holen</button>
                     </div>
                 </div>
 
                 <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
                     <h3 class="text-blue-400 font-black uppercase text-sm mb-4 tracking-widest">Simulations-Pipeline</h3>
                     
-                    <button id="btnRaw" onclick="generateRaw3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 2. Rohes 3D-Modell generieren
+                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
+                        ▶ 2. Basis-3D (NCI Cactus)
                     </button>
                     
-                    <button id="btnMM" onclick="optimizeMM()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 3. Kraftfeld-Optimierung (MM)
-                    </button>
-                    
-                    <button id="btnRef" onclick="fetchReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 4. QM-Referenz laden (PubChem)
+                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
+                        ▶ 3. QM-Referenz (PubChem)
                     </button>
                 </div>
             </div>
@@ -77,10 +67,6 @@
                     <div id="explanationBox" class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-2xl hidden">
                         <h4 class="font-black text-blue-800 uppercase text-sm mb-2" id="explTitle">Information</h4>
                         <p class="text-slate-600 text-sm" id="explText"></p>
-                        
-                        <div id="energyBox" class="mt-3 hidden">
-                            <span class="bg-blue-900 text-yellow-400 px-3 py-1 rounded font-mono font-bold text-xs">Geometrie-Update erfolgreich</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -91,49 +77,23 @@
         // --- GLOBALE VARIABLEN ---
         let jsmeApplet = null;
         let viewer = null;
-        let RDKitModule = null;
-        
         let currentSmiles = "";
-        let molRaw = null;   // RDKit Mol Objekt (roh)
-        let molOpt = null;   // RDKit Mol Objekt (MM optimiert)
-        let refSdf = "";     // PubChem SDF
 
         // --- 1. INITIALISIERUNG ---
-        
-        // JSME Editor laden (wird von der Library per Callback aufgerufen)
         function jsmeOnLoad() {
             jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {
                 "options" : "query,nocanonize,hydrogens"
             });
         }
 
-        // 3Dmol Viewer und RDKit laden
         window.onload = () => {
-            // Viewer Setup
             let element = document.getElementById('viewer3D');
             viewer = $3Dmol.createViewer(element, { backgroundColor: '#0f172a' });
-            
-            // RDKit laden
-            const banner = document.getElementById('statusBanner');
-            banner.classList.remove('hidden');
-            
-            initRDKitModule().then(function(instance) {
-                RDKitModule = instance;
-                banner.innerText = "RDKit Engine erfolgreich geladen! Bereit.";
-                banner.classList.replace('bg-blue-100', 'bg-green-100');
-                banner.classList.replace('text-blue-800', 'text-green-800');
-                setTimeout(() => banner.classList.add('hidden'), 3000);
-            }).catch(e => {
-                banner.innerText = "Fehler beim Laden der RDKit-Engine. Bitte über lokalen Server öffnen.";
-                banner.classList.replace('bg-blue-100', 'bg-red-100');
-                banner.classList.replace('text-blue-800', 'text-red-800');
-                console.error(e);
-            });
         };
 
         // --- 2. WORKFLOW LOGIK ---
 
-        // Schritt 1: SMILES aus JSME holen
+        // Schritt 1: SMILES holen
         function getSmiles() {
             if (!jsmeApplet) return;
             currentSmiles = jsmeApplet.smiles();
@@ -144,122 +104,100 @@
             document.getElementById('smilesInput').value = currentSmiles;
             
             // Buttons freischalten
-            document.getElementById('btnRaw').disabled = false;
-            document.getElementById('btnMM').disabled = true;
+            document.getElementById('btnMM').disabled = false;
             document.getElementById('btnRef').disabled = true;
             
-            // UI Reset
             updateViewLabel("2D Struktur erfasst", "bg-slate-200", "text-slate-600");
             viewer.clear();
             viewer.render();
             hideExplanation();
-        }
-
-        // Schritt 2: Rohes 3D-Modell (Distanzgeometrie)
-        function generateRaw3D() {
-            if (!RDKitModule || !currentSmiles) return;
             
-            try {
-                // Falls altes Mol existiert, aufräumen
-                if (molRaw) molRaw.delete();
-                
-                // Molekül erstellen und Wasserstoffatome hinzufügen
-                molRaw = RDKitModule.get_mol(currentSmiles);
-                
-                if (!molRaw.is_valid()) {
-                    alert("Ungültige Struktur!");
-                    return;
-                }
-
-                // 3D Koordinaten generieren (Rohentwurf)
-                molRaw.add_hs();
-                molRaw.embed_molecule(); // Nutzt ETKDG / Distanzgeometrie
-                
-                const sdf = molRaw.get_molblock();
-                showInViewer(sdf, "Stick");
-                
-                updateViewLabel("Rohes 3D-Modell", "bg-orange-200", "text-orange-800");
-                showExplanation("Rohe Geometrie (Distanzgeometrie)", "Das ist der erste Entwurf des Algorithmus. Er schätzt grobe Abstände, berücksichtigt aber noch keine Abstoßung der Atome oder ideale Bindungswinkel. Das Molekül wirkt oft 'verzerrt' oder unnatürlich flach.");
-                
-                document.getElementById('btnMM').disabled = false;
-                document.getElementById('btnRaw').classList.replace('bg-slate-700', 'bg-blue-600');
-                document.getElementById('btnRaw').classList.replace('text-slate-300', 'text-white');
-                
-            } catch (e) {
-                console.error(e);
-                alert("Fehler bei der 3D-Generierung.");
-            }
+            // Optisches Feedback
+            document.getElementById('step1').classList.remove('border-blue-500', 'step-active');
+            document.getElementById('step1').classList.add('border-transparent');
+            document.getElementById('btnMM').classList.replace('bg-slate-700', 'bg-blue-600');
+            document.getElementById('btnMM').classList.replace('text-slate-300', 'text-white');
         }
 
-        // Schritt 3: Kraftfeld-Optimierung (MMFF94)
-        function optimizeMM() {
-            if (!molRaw) return;
-            
-            try {
-                // Kraftfeldoptimierung anwenden
-                molRaw.ffoptimize(); // Nutzt standardmäßig MMFF94 in der Minimal-Version
-                
-                const sdfOpt = molRaw.get_molblock();
-                showInViewer(sdfOpt, "Sphere"); // Sphere zur Unterscheidung
-                
-                updateViewLabel("Kraftfeld (MM) Optimiert", "bg-blue-200", "text-blue-800");
-                showExplanation("Molekülmechanik (MMFF94)", "Jetzt wurden die physikalischen Gesetze (Federn, elektrostatische Abstoßung) angewandt. Die Atome rutschen in eine energetisch günstige Position. VSEPR-Regeln werden sichtbar (Tetraeder, gewinkelt etc.).", true);
-                
-                document.getElementById('btnRef').disabled = false;
-                document.getElementById('btnMM').classList.replace('bg-slate-700', 'bg-blue-600');
-                document.getElementById('btnMM').classList.replace('text-slate-300', 'text-white');
-
-            } catch (e) {
-                console.error(e);
-                alert("Fehler bei der Optimierung.");
-            }
-        }
-
-        // Schritt 4: Referenz-Struktur aus Web holen (PubChem)
-        async function fetchReference() {
+        // Schritt 2: Standard 3D (via NCI Cactus)
+        async function fetchBasic3D() {
             if (!currentSmiles) return;
             
-            updateViewLabel("Lade Referenz...", "bg-yellow-200", "text-yellow-800");
+            updateViewLabel("Generiere 3D...", "bg-orange-200", "text-orange-800");
             
             try {
-                // PubChem API für berechnetes 3D SDF
                 const encodedSmiles = encodeURIComponent(currentSmiles);
-                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/SDF?record_type=3d`;
+                // NCI Cactus liefert schnelle, regelbasierte 3D Geometrien
+                const url = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/file?format=sdf&get3d=true`;
                 
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("Struktur in PubChem (3D) nicht gefunden.");
+                if (!response.ok) throw new Error("Fehler bei der 3D-Generierung");
                 
-                refSdf = await response.text();
+                const sdfData = await response.text();
                 
-                // Anzeigen im Viewer (Overlapping mit Transparenz wäre cool, hier ersetzen wir es zur Klarheit)
-                showInViewer(refSdf, "Stick", true);
+                showInViewer(sdfData, "Stick");
                 
-                updateViewLabel("QM/Web-Referenz (PubChem)", "bg-green-200", "text-green-800");
-                showExplanation("Wissenschaftliche Referenz", "Dieses Modell stammt aus der PubChem-Datenbank. Es wurde mit hochwertigen quantenmechanischen Methoden berechnet. Vergleiche es mit unserem lokalen MM-Modell: Meistens ist unser lokales Modell im Browser schon erstaunlich nah an der Wahrheit!");
-
+                updateViewLabel("Basis 3D-Modell (NCI Cactus)", "bg-blue-200", "text-blue-800");
+                showExplanation("Standard-Geometrie (Regelbasiert)", "Der Algorithmus hat die 2D-Zeichnung in den 3D-Raum übersetzt. Er nutzt Datenbank-Wissen und einfache Kraftfeld-Regeln (wie VSEPR), um Standard-Bindungslängen und Winkel zu erzeugen.");
+                
+                // Nächsten Button freischalten
+                document.getElementById('btnRef').disabled = false;
+                document.getElementById('btnMM').classList.replace('bg-blue-600', 'bg-slate-700');
+                document.getElementById('btnMM').classList.replace('text-white', 'text-slate-300');
                 document.getElementById('btnRef').classList.replace('bg-slate-700', 'bg-green-600');
                 document.getElementById('btnRef').classList.replace('text-slate-300', 'text-white');
 
             } catch (e) {
                 console.error(e);
-                alert("PubChem konnte keine 3D-Referenz für dieses spezifische Molekül liefern.");
-                updateViewLabel("Referenzfehler", "bg-red-200", "text-red-800");
+                alert("NCI Cactus konnte dieses Molekül nicht verarbeiten.");
+                updateViewLabel("Fehler", "bg-red-200", "text-red-800");
+            }
+        }
+
+        // Schritt 3: QM Referenz (via PubChem)
+        async function fetchQMReference() {
+            if (!currentSmiles) return;
+            
+            updateViewLabel("Lade QM-Referenz...", "bg-yellow-200", "text-yellow-800");
+            
+            try {
+                const encodedSmiles = encodeURIComponent(currentSmiles);
+                // PubChem liefert mit MMFF94 + PM3 (Quantenmechanik) nachoptimierte Modelle
+                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/SDF?record_type=3d`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("PubChem hat keine 3D-Referenz");
+                
+                const sdfData = await response.text();
+                
+                showInViewer(sdfData, "Sphere");
+                
+                updateViewLabel("QM-Referenz (PubChem / PM3)", "bg-green-200", "text-green-800");
+                showExplanation("Quantenmechanische Optimierung", "Dieses Modell stammt aus der Datenbank. Es wurde aufwändig mit semi-empirischer Quantenmechanik (PM3) nachoptimiert. Oft siehst du nur kleine Anpassungen im Vergleich zum Basis-Modell – das zeigt, wie gut einfache Regeln oft schon sind!");
+
+            } catch (e) {
+                console.error(e);
+                alert("PubChem hat für dieses spezifische Molekül (noch) keine 3D-Struktur hinterlegt.");
+                updateViewLabel("Referenz fehlt", "bg-red-200", "text-red-800");
             }
         }
 
         // --- 3. HELPER FUNKTIONEN ---
-
-        function showInViewer(sdfData, styleType, isRef = false) {
+        function showInViewer(sdfData, styleType) {
             viewer.clear();
             viewer.addModel(sdfData, "sdf");
             
             if(styleType === "Stick") {
-                viewer.setStyle({}, { stick: { radius: 0.15, colorscheme: isRef ? 'cyanCarbon' : 'lightgreyCarbon' }, sphere: { scale: 0.3 }});
+                // Typische "Stäbchen"-Darstellung
+                viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.3 }});
             } else {
-                viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.4 }});
+                // Auffälligere Darstellung für das End-Modell
+                viewer.setStyle({}, { stick: { radius: 0.2 }, sphere: { scale: 0.4 }});
             }
             
             viewer.zoomTo();
+            // Sanfte Drehung zur besseren 3D-Wahrnehmung
+            viewer.spin("y", 1); 
             viewer.render();
         }
 
@@ -269,21 +207,16 @@
             lbl.innerText = text;
         }
 
-        function showExplanation(title, text, showEnergy = false) {
+        function showExplanation(title, text) {
             const box = document.getElementById('explanationBox');
             document.getElementById('explTitle').innerText = title;
             document.getElementById('explText').innerText = text;
-            
-            if(showEnergy) document.getElementById('energyBox').classList.remove('hidden');
-            else document.getElementById('energyBox').classList.add('hidden');
-            
             box.classList.remove('hidden');
         }
 
         function hideExplanation() {
             document.getElementById('explanationBox').classList.add('hidden');
         }
-
     </script>
 </body>
 </html>
