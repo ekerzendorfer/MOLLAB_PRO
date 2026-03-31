@@ -1,1 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molekül-Labor Pro | 3D-Optimierung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
+    
+    <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
+    
+    <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
 
+    <style>
+        .step-card { transition: all 0.3s ease; }
+        .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+        .viewer-container { position: relative; width: 100%; height: 400px; background-color: #0f172a; border-radius: 1rem; overflow: hidden; }
+        #jsme_container { border-radius: 1rem; overflow: hidden; border: 2px solid #cbd5e1; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
+
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex items-center gap-6">
+            <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧬</div>
+            <div>
+                <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ 3D Aufbau ➔ Kraftfeld ➔ QM-Referenz</p>
+            </div>
+        </header>
+
+        <div id="statusBanner" class="hidden w-full bg-blue-100 text-blue-800 p-4 rounded-xl mb-6 font-bold text-center border border-blue-300">
+            Initialisiere Chemie-Engine...
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div class="lg:col-span-5 space-y-6">
+                
+                <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-transparent step-active">
+                    <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
+                    <p class="text-xs text-slate-500 mb-4">Zeichne eine 2D-Struktur (oder wähle eine Vorlage im Editor).</p>
+                    <div id="jsme_container" class="w-full h-[300px] bg-slate-50"></div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-sm" placeholder="SMILES Code..." readonly>
+                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500">SMILES holen</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
+                    <h3 class="text-blue-400 font-black uppercase text-sm mb-4 tracking-widest">Simulations-Pipeline</h3>
+                    
+                    <button id="btnRaw" onclick="generateRaw3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
+                        ▶ 2. Rohes 3D-Modell generieren
+                    </button>
+                    
+                    <button id="btnMM" onclick="optimizeMM()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
+                        ▶ 3. Kraftfeld-Optimierung (MM)
+                    </button>
+                    
+                    <button id="btnRef" onclick="fetchReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
+                        ▶ 4. QM-Referenz laden (PubChem)
+                    </button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7">
+                <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col">
+                    <div class="flex justify-between items-end mb-4">
+                        <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
+                        <span id="viewLabel" class="bg-slate-200 text-slate-600 px-4 py-1 rounded-full font-bold text-xs uppercase tracking-widest">Kein Modell geladen</span>
+                    </div>
+                    
+                    <div id="viewer3D" class="viewer-container flex-1 border-4 border-slate-900"></div>
+                    
+                    <div id="explanationBox" class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-2xl hidden">
+                        <h4 class="font-black text-blue-800 uppercase text-sm mb-2" id="explTitle">Information</h4>
+                        <p class="text-slate-600 text-sm" id="explText"></p>
+                        
+                        <div id="energyBox" class="mt-3 hidden">
+                            <span class="bg-blue-900 text-yellow-400 px-3 py-1 rounded font-mono font-bold text-xs">Geometrie-Update erfolgreich</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBALE VARIABLEN ---
+        let jsmeApplet = null;
+        let viewer = null;
+        let RDKitModule = null;
+        
+        let currentSmiles = "";
+        let molRaw = null;   // RDKit Mol Objekt (roh)
+        let molOpt = null;   // RDKit Mol Objekt (MM optimiert)
+        let refSdf = "";     // PubChem SDF
+
+        // --- 1. INITIALISIERUNG ---
+        
+        // JSME Editor laden (wird von der Library per Callback aufgerufen)
+        function jsmeOnLoad() {
+            jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {
+                "options" : "query,nocanonize,hydrogens"
+            });
+        }
+
+        // 3Dmol Viewer und RDKit laden
+        window.onload = () => {
+            // Viewer Setup
+            let element = document.getElementById('viewer3D');
+            viewer = $3Dmol.createViewer(element, { backgroundColor: '#0f172a' });
+            
+            // RDKit laden
+            const banner = document.getElementById('statusBanner');
+            banner.classList.remove('hidden');
+            
+            initRDKitModule().then(function(instance) {
+                RDKitModule = instance;
+                banner.innerText = "RDKit Engine erfolgreich geladen! Bereit.";
+                banner.classList.replace('bg-blue-100', 'bg-green-100');
+                banner.classList.replace('text-blue-800', 'text-green-800');
+                setTimeout(() => banner.classList.add('hidden'), 3000);
+            }).catch(e => {
+                banner.innerText = "Fehler beim Laden der RDKit-Engine. Bitte über lokalen Server öffnen.";
+                banner.classList.replace('bg-blue-100', 'bg-red-100');
+                banner.classList.replace('text-blue-800', 'text-red-800');
+                console.error(e);
+            });
+        };
+
+        // --- 2. WORKFLOW LOGIK ---
+
+        // Schritt 1: SMILES aus JSME holen
+        function getSmiles() {
+            if (!jsmeApplet) return;
+            currentSmiles = jsmeApplet.smiles();
+            if (!currentSmiles) {
+                alert("Bitte zeichne zuerst ein Molekül!");
+                return;
+            }
+            document.getElementById('smilesInput').value = currentSmiles;
+            
+            // Buttons freischalten
+            document.getElementById('btnRaw').disabled = false;
+            document.getElementById('btnMM').disabled = true;
+            document.getElementById('btnRef').disabled = true;
+            
+            // UI Reset
+            updateViewLabel("2D Struktur erfasst", "bg-slate-200", "text-slate-600");
+            viewer.clear();
+            viewer.render();
+            hideExplanation();
+        }
+
+        // Schritt 2: Rohes 3D-Modell (Distanzgeometrie)
+        function generateRaw3D() {
+            if (!RDKitModule || !currentSmiles) return;
+            
+            try {
+                // Falls altes Mol existiert, aufräumen
+                if (molRaw) molRaw.delete();
+                
+                // Molekül erstellen und Wasserstoffatome hinzufügen
+                molRaw = RDKitModule.get_mol(currentSmiles);
+                
+                if (!molRaw.is_valid()) {
+                    alert("Ungültige Struktur!");
+                    return;
+                }
+
+                // 3D Koordinaten generieren (Rohentwurf)
+                molRaw.add_hs();
+                molRaw.embed_molecule(); // Nutzt ETKDG / Distanzgeometrie
+                
+                const sdf = molRaw.get_molblock();
+                showInViewer(sdf, "Stick");
+                
+                updateViewLabel("Rohes 3D-Modell", "bg-orange-200", "text-orange-800");
+                showExplanation("Rohe Geometrie (Distanzgeometrie)", "Das ist der erste Entwurf des Algorithmus. Er schätzt grobe Abstände, berücksichtigt aber noch keine Abstoßung der Atome oder ideale Bindungswinkel. Das Molekül wirkt oft 'verzerrt' oder unnatürlich flach.");
+                
+                document.getElementById('btnMM').disabled = false;
+                document.getElementById('btnRaw').classList.replace('bg-slate-700', 'bg-blue-600');
+                document.getElementById('btnRaw').classList.replace('text-slate-300', 'text-white');
+                
+            } catch (e) {
+                console.error(e);
+                alert("Fehler bei der 3D-Generierung.");
+            }
+        }
+
+        // Schritt 3: Kraftfeld-Optimierung (MMFF94)
+        function optimizeMM() {
+            if (!molRaw) return;
+            
+            try {
+                // Kraftfeldoptimierung anwenden
+                molRaw.ffoptimize(); // Nutzt standardmäßig MMFF94 in der Minimal-Version
+                
+                const sdfOpt = molRaw.get_molblock();
+                showInViewer(sdfOpt, "Sphere"); // Sphere zur Unterscheidung
+                
+                updateViewLabel("Kraftfeld (MM) Optimiert", "bg-blue-200", "text-blue-800");
+                showExplanation("Molekülmechanik (MMFF94)", "Jetzt wurden die physikalischen Gesetze (Federn, elektrostatische Abstoßung) angewandt. Die Atome rutschen in eine energetisch günstige Position. VSEPR-Regeln werden sichtbar (Tetraeder, gewinkelt etc.).", true);
+                
+                document.getElementById('btnRef').disabled = false;
+                document.getElementById('btnMM').classList.replace('bg-slate-700', 'bg-blue-600');
+                document.getElementById('btnMM').classList.replace('text-slate-300', 'text-white');
+
+            } catch (e) {
+                console.error(e);
+                alert("Fehler bei der Optimierung.");
+            }
+        }
+
+        // Schritt 4: Referenz-Struktur aus Web holen (PubChem)
+        async function fetchReference() {
+            if (!currentSmiles) return;
+            
+            updateViewLabel("Lade Referenz...", "bg-yellow-200", "text-yellow-800");
+            
+            try {
+                // PubChem API für berechnetes 3D SDF
+                const encodedSmiles = encodeURIComponent(currentSmiles);
+                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/SDF?record_type=3d`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("Struktur in PubChem (3D) nicht gefunden.");
+                
+                refSdf = await response.text();
+                
+                // Anzeigen im Viewer (Overlapping mit Transparenz wäre cool, hier ersetzen wir es zur Klarheit)
+                showInViewer(refSdf, "Stick", true);
+                
+                updateViewLabel("QM/Web-Referenz (PubChem)", "bg-green-200", "text-green-800");
+                showExplanation("Wissenschaftliche Referenz", "Dieses Modell stammt aus der PubChem-Datenbank. Es wurde mit hochwertigen quantenmechanischen Methoden berechnet. Vergleiche es mit unserem lokalen MM-Modell: Meistens ist unser lokales Modell im Browser schon erstaunlich nah an der Wahrheit!");
+
+                document.getElementById('btnRef').classList.replace('bg-slate-700', 'bg-green-600');
+                document.getElementById('btnRef').classList.replace('text-slate-300', 'text-white');
+
+            } catch (e) {
+                console.error(e);
+                alert("PubChem konnte keine 3D-Referenz für dieses spezifische Molekül liefern.");
+                updateViewLabel("Referenzfehler", "bg-red-200", "text-red-800");
+            }
+        }
+
+        // --- 3. HELPER FUNKTIONEN ---
+
+        function showInViewer(sdfData, styleType, isRef = false) {
+            viewer.clear();
+            viewer.addModel(sdfData, "sdf");
+            
+            if(styleType === "Stick") {
+                viewer.setStyle({}, { stick: { radius: 0.15, colorscheme: isRef ? 'cyanCarbon' : 'lightgreyCarbon' }, sphere: { scale: 0.3 }});
+            } else {
+                viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.4 }});
+            }
+            
+            viewer.zoomTo();
+            viewer.render();
+        }
+
+        function updateViewLabel(text, bgClass, textClass) {
+            const lbl = document.getElementById('viewLabel');
+            lbl.className = `${bgClass} ${textClass} px-4 py-1 rounded-full font-bold text-xs uppercase tracking-widest`;
+            lbl.innerText = text;
+        }
+
+        function showExplanation(title, text, showEnergy = false) {
+            const box = document.getElementById('explanationBox');
+            document.getElementById('explTitle').innerText = title;
+            document.getElementById('explText').innerText = text;
+            
+            if(showEnergy) document.getElementById('energyBox').classList.remove('hidden');
+            else document.getElementById('energyBox').classList.add('hidden');
+            
+            box.classList.remove('hidden');
+        }
+
+        function hideExplanation() {
+            document.getElementById('explanationBox').classList.add('hidden');
+        }
+
+    </script>
+</body>
+</html>
