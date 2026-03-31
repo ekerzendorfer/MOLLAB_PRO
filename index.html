@@ -10,6 +10,8 @@
     
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeric/1.2.6/numeric.min.js"></script>
+
     <style>
         .step-card { transition: all 0.3s ease; }
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
@@ -29,7 +31,7 @@
             <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧬</div>
             <div>
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D ➔ QM-Referenz ➔ Overlay</p>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D ➔ QM-Referenz ➔ Perfektes Overlay</p>
             </div>
         </header>
 
@@ -39,11 +41,12 @@
                 
                 <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
                     <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
-                    <p class="text-xs text-slate-500 mb-2">Zeichne eine 2D-Struktur (Tipp: Nutze den <b>Besen</b> im Menü zur 2D-Optimierung).</p>
+                    <p class="text-xs text-slate-500 mb-2">Zeichne eine 2D-Struktur (Tipp: Nutze den 🧹 Besen zur automatischen 2D-Optimierung).</p>
                     <div id="jsme_container" class="w-full h-[300px] bg-slate-50"></div>
                     
                     <div class="mt-4 space-y-2">
                         <div class="flex gap-2">
+                            <button onclick="clean2D()" title="2D Struktur aufräumen" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 transition-colors text-xl">🧹</button>
                             <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" placeholder="SMILES Code..." readonly>
                             <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors uppercase tracking-widest text-xs">SMILES holen</button>
                         </div>
@@ -97,7 +100,6 @@
                             <span id="rotIcon">▶</span> Rotation
                         </button>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -111,6 +113,7 @@
         
         let basicSdf = "";
         let refSdf = "";
+        let refSdfAligned = ""; // Gespeicherte, per Kabsch-Algorithmus ausgerichtete Referenz
         
         let currentDisplayMode = "basic"; // 'basic', 'ref', 'overlay'
         let isRotating = false;
@@ -128,6 +131,14 @@
         };
 
         // --- 2. WORKFLOW LOGIK ---
+
+        function clean2D() {
+            if (!jsmeApplet) return;
+            let smiles = jsmeApplet.smiles();
+            if (smiles) {
+                jsmeApplet.readGenericMolecularInput(smiles); // Erzwingt 2D-Neuberechnung
+            }
+        }
 
         function getSmiles() {
             if (!jsmeApplet) return;
@@ -149,6 +160,7 @@
             // Reset Modelle
             basicSdf = "";
             refSdf = "";
+            refSdfAligned = "";
             document.getElementById('modelToggleGroup').classList.add('hidden');
             
             viewer.clear();
@@ -219,6 +231,9 @@
                 
                 refSdf = await response.text();
                 
+                // Alignment durchführen
+                refSdfAligned = alignSDFs(basicSdf, refSdf);
+                
                 // Overlay Modus aktivieren
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
                 setDisplayMode('overlay');
@@ -254,8 +269,8 @@
             const styleVal = document.getElementById('styleSelect').value;
             let styleObj = {};
             
-            // Farb-Schema: Referenz-Kohlenstoffe werden Cyan zur besseren Unterscheidung im Overlay
-            let cScheme = isRef ? 'cyanCarbon' : 'lightgreyCarbon';
+            // Farb-Schema: Im Overlay wird die QM Referenz Cyan eingefärbt
+            let cScheme = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
 
             if (styleVal === "ballAndStick") {
                 styleObj = { stick: { radius: 0.15, colorscheme: cScheme }, sphere: { scale: 0.3, colorscheme: cScheme } };
@@ -275,25 +290,25 @@
         function renderModels() {
             viewer.clear();
             
-            // Modell 1: Basis (NCI Cactus)
+            // Modell 1: Basis
             if (basicSdf && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(basicSdf, "sdf");
                 viewer.setStyle({model: 0}, getStyleObject(false));
             }
             
-            // Modell 2: QM Referenz (PubChem)
+            // Modell 2: QM Referenz
             if (refSdf && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(refSdf, "sdf");
-                // Wenn Overlay, ist es Modell 1 (da Basis Modell 0 ist), ansonsten Modell 0
+                let sdfToRender = (currentDisplayMode === 'overlay') ? refSdfAligned : refSdf;
+                viewer.addModel(sdfToRender, "sdf");
                 let modelIndex = (currentDisplayMode === 'overlay' && basicSdf) ? 1 : 0;
                 viewer.setStyle({model: modelIndex}, getStyleObject(true));
             }
             
             viewer.zoomTo();
+            if(isRotating) { viewer.spin("y", 1); } else { viewer.spin(false); }
             viewer.render();
         }
 
-        // --- ROTATION ---
         function toggleRotation() {
             isRotating = !isRotating;
             const btn = document.getElementById('btnRotate');
@@ -311,6 +326,133 @@
                 btn.classList.replace('text-blue-800', 'text-slate-700');
                 btn.classList.remove('border-blue-400');
                 icon.innerText = "▶";
+            }
+        }
+
+        // --- 4. KABSCH-ALGORITHMUS ZUR 3D ÜBERLAGERUNG ---
+        
+        function extractHeavyAtomsSDF(sdf) {
+            let lines = sdf.split('\n');
+            let atoms = [];
+            if(lines.length < 4) return atoms;
+            let numAtoms = parseInt(lines[3].substring(0, 3));
+            for (let i = 0; i < numAtoms; i++) {
+                let line = lines[4 + i];
+                let elem = line.substring(31, 34).trim();
+                if (elem !== 'H') {
+                    atoms.push({
+                        x: parseFloat(line.substring(0, 10)),
+                        y: parseFloat(line.substring(10, 20)),
+                        z: parseFloat(line.substring(20, 30)),
+                        elem: elem
+                    });
+                }
+            }
+            return atoms;
+        }
+
+        function extractAllAtomsSDF(sdf) {
+            let lines = sdf.split('\n');
+            let atoms = [];
+            if(lines.length < 4) return atoms;
+            let numAtoms = parseInt(lines[3].substring(0, 3));
+            for (let i = 0; i < numAtoms; i++) {
+                let line = lines[4 + i];
+                atoms.push({
+                    x: parseFloat(line.substring(0, 10)),
+                    y: parseFloat(line.substring(10, 20)),
+                    z: parseFloat(line.substring(20, 30))
+                });
+            }
+            return atoms;
+        }
+
+        function getCentroid(atoms) {
+            let cx = 0, cy = 0, cz = 0;
+            atoms.forEach(a => { cx+=a.x; cy+=a.y; cz+=a.z; });
+            let n = atoms.length || 1;
+            return { x: cx/n, y: cy/n, z: cz/n };
+        }
+
+        function transformSDF(sdf, c1, c2, R) {
+            let lines = sdf.split('\n');
+            if (lines.length < 4) return sdf;
+            
+            let numAtoms = parseInt(lines[3].substring(0, 3));
+            
+            for (let i = 0; i < numAtoms; i++) {
+                let lineIdx = 4 + i;
+                let line = lines[lineIdx];
+                if (line.length < 30) continue; 
+                
+                let x = parseFloat(line.substring(0, 10));
+                let y = parseFloat(line.substring(10, 20));
+                let z = parseFloat(line.substring(20, 30));
+                
+                // 1. Zum Ursprung verschieben
+                x -= c2.x; y -= c2.y; z -= c2.z;
+                
+                // 2. Rotieren
+                let nx = R[0][0]*x + R[0][1]*y + R[0][2]*z;
+                let ny = R[1][0]*x + R[1][1]*y + R[1][2]*z;
+                let nz = R[2][0]*x + R[2][1]*y + R[2][2]*z;
+                
+                // 3. Zum Ziel-Schwerpunkt verschieben
+                nx += c1.x; ny += c1.y; nz += c1.z;
+                
+                // Formatieren
+                let sx = nx.toFixed(4).padStart(10, ' ');
+                let sy = ny.toFixed(4).padStart(10, ' ');
+                let sz = nz.toFixed(4).padStart(10, ' ');
+                
+                lines[lineIdx] = sx + sy + sz + line.substring(30);
+            }
+            return lines.join('\n');
+        }
+
+        function alignSDFs(sdfBase, sdfMove) {
+            try {
+                let heavy1 = extractHeavyAtomsSDF(sdfBase);
+                let heavy2 = extractHeavyAtomsSDF(sdfMove);
+                
+                // Fallback: Nur Schwerpunkte ausrichten, falls Atomanzahl divergiert
+                if(heavy1.length !== heavy2.length || heavy1.length === 0) {
+                    let all1 = extractAllAtomsSDF(sdfBase);
+                    let all2 = extractAllAtomsSDF(sdfMove);
+                    let c1 = getCentroid(all1);
+                    let c2 = getCentroid(all2);
+                    let R_ident = [[1,0,0],[0,1,0],[0,0,1]];
+                    return transformSDF(sdfMove, c1, c2, R_ident);
+                }
+                
+                let c1 = getCentroid(heavy1);
+                let c2 = getCentroid(heavy2);
+                
+                let P = heavy1.map(a => [a.x-c1.x, a.y-c1.y, a.z-c1.z]);
+                let Q = heavy2.map(a => [a.x-c2.x, a.y-c2.y, a.z-c2.z]);
+                
+                let H = [[0,0,0],[0,0,0],[0,0,0]];
+                for(let i=0; i<P.length; i++) {
+                    for(let r=0; r<3; r++) {
+                        for(let c=0; c<3; c++) {
+                            H[r][c] += P[i][r] * Q[i][c];
+                        }
+                    }
+                }
+                
+                // Singulärwertzerlegung (SVD) via numeric.js
+                let svd = numeric.svd(H);
+                let R_temp = numeric.dot(svd.V, numeric.transpose(svd.U));
+                let det = numeric.det(R_temp);
+                
+                // Spiegelungen korrigieren
+                let E = [[1,0,0],[0,1,0],[0,0,det]];
+                let R = numeric.dot(numeric.dot(svd.V, E), numeric.transpose(svd.U));
+                
+                return transformSDF(sdfMove, c1, c2, R);
+            } catch(e) {
+                console.error("Alignment fehlgeschlagen:", e);
+                return sdfMove; // Fallback: Unbearbeitetes Modell zurückgeben
             }
         }
     </script>
