@@ -15,6 +15,11 @@
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
         .viewer-container { position: relative; width: 100%; height: 400px; background-color: #0f172a; border-radius: 1rem; overflow: hidden; }
         #jsme_container { border-radius: 1rem; overflow: hidden; border: 2px solid #cbd5e1; }
+        
+        /* Custom Toggle für den Viewer-Modus */
+        .mode-toggle-btn { transition: all 0.2s; }
+        .mode-active { background-color: #3b82f6; color: white; font-weight: 900; border-color: #2563eb; }
+        .mode-inactive { background-color: #f1f5f9; color: #64748b; font-weight: 700; border-color: #e2e8f0; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
@@ -24,7 +29,7 @@
             <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🧬</div>
             <div>
                 <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D (Kraftfeld) ➔ QM-Referenz</p>
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">2D Skizze ➔ Basis-3D ➔ QM-Referenz ➔ Overlay</p>
             </div>
         </header>
 
@@ -34,11 +39,19 @@
                 
                 <div id="step1" class="step-card bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
                     <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
-                    <p class="text-xs text-slate-500 mb-4">Zeichne eine 2D-Struktur oder nutze die Vorlagen.</p>
+                    <p class="text-xs text-slate-500 mb-2">Zeichne eine 2D-Struktur (Tipp: Nutze den <b>Besen</b> im Menü zur 2D-Optimierung).</p>
                     <div id="jsme_container" class="w-full h-[300px] bg-slate-50"></div>
-                    <div class="mt-4 flex gap-2">
-                        <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-sm" placeholder="SMILES Code..." readonly>
-                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors">SMILES holen</button>
+                    
+                    <div class="mt-4 space-y-2">
+                        <div class="flex gap-2">
+                            <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" placeholder="SMILES Code..." readonly>
+                            <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 transition-colors uppercase tracking-widest text-xs">SMILES holen</button>
+                        </div>
+                        
+                        <div id="iupacContainer" class="hidden bg-slate-100 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[10px] font-black text-slate-400 uppercase block mb-1">IUPAC Name:</span>
+                            <span id="iupacName" class="font-mono font-bold text-blue-800 text-sm">Lädt...</span>
+                        </div>
                     </div>
                 </div>
 
@@ -46,7 +59,7 @@
                     <h3 class="text-blue-400 font-black uppercase text-sm mb-4 tracking-widest">Simulations-Pipeline</h3>
                     
                     <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
-                        ▶ 2. Basis-3D (NCI Cactus)
+                        ▶ 2. Basis-3D (Kraftfeld)
                     </button>
                     
                     <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-left px-6 border border-slate-600">
@@ -57,17 +70,34 @@
 
             <div class="lg:col-span-7">
                 <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col">
-                    <div class="flex justify-between items-end mb-4">
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                         <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
-                        <span id="viewLabel" class="bg-slate-200 text-slate-600 px-4 py-1 rounded-full font-bold text-xs uppercase tracking-widest">Kein Modell geladen</span>
+                        
+                        <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+                            <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-3 py-2 text-xs uppercase tracking-widest border-r">Basis</button>
+                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest border-r">QM-Ref</button>
+                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest">Overlay</button>
+                        </div>
                     </div>
                     
                     <div id="viewer3D" class="viewer-container flex-1 border-4 border-slate-900"></div>
                     
-                    <div id="explanationBox" class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-2xl hidden">
-                        <h4 class="font-black text-blue-800 uppercase text-sm mb-2" id="explTitle">Information</h4>
-                        <p class="text-slate-600 text-sm" id="explText"></p>
+                    <div class="mt-4 flex flex-wrap gap-4 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Darstellung:</label>
+                        <select id="styleSelect" onchange="updateViewerStyle()" class="bg-white border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 font-bold outline-none cursor-pointer">
+                            <option value="ballAndStick">Ball & Stick</option>
+                            <option value="stick">Stäbchen</option>
+                            <option value="sphere">Kalottenmodell</option>
+                        </select>
+                        
+                        <div class="flex-1"></div>
+                        
+                        <button id="btnRotate" onclick="toggleRotation()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-bold text-sm uppercase tracking-widest transition-colors flex items-center gap-2 border border-slate-300">
+                            <span id="rotIcon">▶</span> Rotation
+                        </button>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -78,6 +108,12 @@
         let jsmeApplet = null;
         let viewer = null;
         let currentSmiles = "";
+        
+        let basicSdf = "";
+        let refSdf = "";
+        
+        let currentDisplayMode = "basic"; // 'basic', 'ref', 'overlay'
+        let isRotating = false;
 
         // --- 1. INITIALISIERUNG ---
         function jsmeOnLoad() {
@@ -93,7 +129,6 @@
 
         // --- 2. WORKFLOW LOGIK ---
 
-        // Schritt 1: SMILES holen
         function getSmiles() {
             if (!jsmeApplet) return;
             currentSmiles = jsmeApplet.smiles();
@@ -101,46 +136,65 @@
                 alert("Bitte zeichne zuerst ein Molekül!");
                 return;
             }
+            
             document.getElementById('smilesInput').value = currentSmiles;
+            
+            // IUPAC Name holen
+            fetchIUPAC(currentSmiles);
             
             // Buttons freischalten
             document.getElementById('btnMM').disabled = false;
             document.getElementById('btnRef').disabled = true;
             
-            updateViewLabel("2D Struktur erfasst", "bg-slate-200", "text-slate-600");
+            // Reset Modelle
+            basicSdf = "";
+            refSdf = "";
+            document.getElementById('modelToggleGroup').classList.add('hidden');
+            
             viewer.clear();
             viewer.render();
-            hideExplanation();
             
-            // Optisches Feedback
             document.getElementById('step1').classList.remove('border-blue-500', 'step-active');
             document.getElementById('step1').classList.add('border-transparent');
             document.getElementById('btnMM').classList.replace('bg-slate-700', 'bg-blue-600');
             document.getElementById('btnMM').classList.replace('text-slate-300', 'text-white');
         }
 
-        // Schritt 2: Standard 3D (via NCI Cactus)
+        async function fetchIUPAC(smiles) {
+            const container = document.getElementById('iupacContainer');
+            const nameEl = document.getElementById('iupacName');
+            container.classList.remove('hidden');
+            nameEl.innerText = "Sucht IUPAC-Namen...";
+            
+            try {
+                const encodedSmiles = encodeURIComponent(smiles);
+                const url = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/iupac_name`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    nameEl.innerText = await response.text();
+                } else {
+                    nameEl.innerText = "Kein Standardname gefunden.";
+                }
+            } catch (e) {
+                nameEl.innerText = "Abfrage fehlgeschlagen.";
+            }
+        }
+
         async function fetchBasic3D() {
             if (!currentSmiles) return;
             
-            updateViewLabel("Generiere 3D...", "bg-orange-200", "text-orange-800");
-            
             try {
                 const encodedSmiles = encodeURIComponent(currentSmiles);
-                // NCI Cactus liefert schnelle, regelbasierte 3D Geometrien
                 const url = `https://cactus.nci.nih.gov/chemical/structure/${encodedSmiles}/file?format=sdf&get3d=true`;
                 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("Fehler bei der 3D-Generierung");
                 
-                const sdfData = await response.text();
+                basicSdf = await response.text();
                 
-                showInViewer(sdfData, "Stick");
+                currentDisplayMode = "basic";
+                renderModels();
                 
-                updateViewLabel("Basis 3D-Modell (NCI Cactus)", "bg-blue-200", "text-blue-800");
-                showExplanation("Standard-Geometrie (Regelbasiert)", "Der Algorithmus hat die 2D-Zeichnung in den 3D-Raum übersetzt. Er nutzt Datenbank-Wissen und einfache Kraftfeld-Regeln (wie VSEPR), um Standard-Bindungslängen und Winkel zu erzeugen.");
-                
-                // Nächsten Button freischalten
                 document.getElementById('btnRef').disabled = false;
                 document.getElementById('btnMM').classList.replace('bg-blue-600', 'bg-slate-700');
                 document.getElementById('btnMM').classList.replace('text-white', 'text-slate-300');
@@ -150,72 +204,114 @@
             } catch (e) {
                 console.error(e);
                 alert("NCI Cactus konnte dieses Molekül nicht verarbeiten.");
-                updateViewLabel("Fehler", "bg-red-200", "text-red-800");
             }
         }
 
-        // Schritt 3: QM Referenz (via PubChem)
         async function fetchQMReference() {
             if (!currentSmiles) return;
             
-            updateViewLabel("Lade QM-Referenz...", "bg-yellow-200", "text-yellow-800");
-            
             try {
                 const encodedSmiles = encodeURIComponent(currentSmiles);
-                // PubChem liefert mit MMFF94 + PM3 (Quantenmechanik) nachoptimierte Modelle
                 const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/SDF?record_type=3d`;
                 
                 const response = await fetch(url);
                 if (!response.ok) throw new Error("PubChem hat keine 3D-Referenz");
                 
-                const sdfData = await response.text();
+                refSdf = await response.text();
                 
-                showInViewer(sdfData, "Sphere");
+                // Overlay Modus aktivieren
+                document.getElementById('modelToggleGroup').classList.remove('hidden');
+                setDisplayMode('overlay');
                 
-                updateViewLabel("QM-Referenz (PubChem / PM3)", "bg-green-200", "text-green-800");
-                showExplanation("Quantenmechanische Optimierung", "Dieses Modell stammt aus der Datenbank. Es wurde aufwändig mit semi-empirischer Quantenmechanik (PM3) nachoptimiert. Oft siehst du nur kleine Anpassungen im Vergleich zum Basis-Modell – das zeigt, wie gut einfache Regeln oft schon sind!");
+                document.getElementById('btnRef').classList.replace('bg-green-600', 'bg-slate-700');
+                document.getElementById('btnRef').classList.replace('text-white', 'text-slate-300');
 
             } catch (e) {
                 console.error(e);
-                alert("PubChem hat für dieses spezifische Molekül (noch) keine 3D-Struktur hinterlegt.");
-                updateViewLabel("Referenz fehlt", "bg-red-200", "text-red-800");
+                alert("PubChem hat für dieses Molekül keine 3D-Struktur hinterlegt.");
             }
         }
 
-        // --- 3. HELPER FUNKTIONEN ---
-        function showInViewer(sdfData, styleType) {
-            viewer.clear();
-            viewer.addModel(sdfData, "sdf");
+        // --- 3. VIEWER & OVERLAY LOGIK ---
+        
+        function setDisplayMode(mode) {
+            currentDisplayMode = mode;
             
-            if(styleType === "Stick") {
-                // Typische "Stäbchen"-Darstellung
-                viewer.setStyle({}, { stick: { radius: 0.15 }, sphere: { scale: 0.3 }});
-            } else {
-                // Auffälligere Darstellung für das End-Modell
-                viewer.setStyle({}, { stick: { radius: 0.2 }, sphere: { scale: 0.4 }});
+            // Buttons stylen
+            ['basic', 'ref', 'overlay'].forEach(m => {
+                let btn = document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1));
+                if (m === mode) {
+                    btn.className = "mode-toggle-btn mode-active px-3 py-2 text-xs uppercase tracking-widest border-r";
+                } else {
+                    btn.className = "mode-toggle-btn mode-inactive px-3 py-2 text-xs uppercase tracking-widest border-r";
+                }
+            });
+            
+            renderModels();
+        }
+
+        function getStyleObject(isRef) {
+            const styleVal = document.getElementById('styleSelect').value;
+            let styleObj = {};
+            
+            // Farb-Schema: Referenz-Kohlenstoffe werden Cyan zur besseren Unterscheidung im Overlay
+            let cScheme = isRef ? 'cyanCarbon' : 'lightgreyCarbon';
+
+            if (styleVal === "ballAndStick") {
+                styleObj = { stick: { radius: 0.15, colorscheme: cScheme }, sphere: { scale: 0.3, colorscheme: cScheme } };
+            } else if (styleVal === "stick") {
+                styleObj = { stick: { radius: 0.25, colorscheme: cScheme } };
+            } else if (styleVal === "sphere") {
+                styleObj = { sphere: { scale: 1.0, colorscheme: cScheme } };
+            }
+            
+            return styleObj;
+        }
+
+        function updateViewerStyle() {
+            renderModels();
+        }
+
+        function renderModels() {
+            viewer.clear();
+            
+            // Modell 1: Basis (NCI Cactus)
+            if (basicSdf && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
+                viewer.addModel(basicSdf, "sdf");
+                viewer.setStyle({model: 0}, getStyleObject(false));
+            }
+            
+            // Modell 2: QM Referenz (PubChem)
+            if (refSdf && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
+                viewer.addModel(refSdf, "sdf");
+                // Wenn Overlay, ist es Modell 1 (da Basis Modell 0 ist), ansonsten Modell 0
+                let modelIndex = (currentDisplayMode === 'overlay' && basicSdf) ? 1 : 0;
+                viewer.setStyle({model: modelIndex}, getStyleObject(true));
             }
             
             viewer.zoomTo();
-            // Sanfte Drehung zur besseren 3D-Wahrnehmung
-            viewer.spin("y", 1); 
             viewer.render();
         }
 
-        function updateViewLabel(text, bgClass, textClass) {
-            const lbl = document.getElementById('viewLabel');
-            lbl.className = `${bgClass} ${textClass} px-4 py-1 rounded-full font-bold text-xs uppercase tracking-widest`;
-            lbl.innerText = text;
-        }
-
-        function showExplanation(title, text) {
-            const box = document.getElementById('explanationBox');
-            document.getElementById('explTitle').innerText = title;
-            document.getElementById('explText').innerText = text;
-            box.classList.remove('hidden');
-        }
-
-        function hideExplanation() {
-            document.getElementById('explanationBox').classList.add('hidden');
+        // --- ROTATION ---
+        function toggleRotation() {
+            isRotating = !isRotating;
+            const btn = document.getElementById('btnRotate');
+            const icon = document.getElementById('rotIcon');
+            
+            if (isRotating) {
+                viewer.spin("y", 1);
+                btn.classList.replace('bg-slate-200', 'bg-blue-200');
+                btn.classList.replace('text-slate-700', 'text-blue-800');
+                btn.classList.add('border-blue-400');
+                icon.innerText = "⏸";
+            } else {
+                viewer.spin(false);
+                btn.classList.replace('bg-blue-200', 'bg-slate-200');
+                btn.classList.replace('text-blue-800', 'text-slate-700');
+                btn.classList.remove('border-blue-400');
+                icon.innerText = "▶";
+            }
         }
     </script>
 </body>
