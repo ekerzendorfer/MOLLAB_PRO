@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
-    
     <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
 
     <style>
@@ -27,7 +26,7 @@
                 <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🚀</div>
                 <div>
                     <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Docking & RDKit Analytik</p>
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Docking, VDW-Oberflächen & RDKit</p>
                 </div>
             </div>
             <div id="rdkitStatus" class="hidden md:block text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
@@ -106,6 +105,10 @@
                             <option value="line">Skelettformel</option>
                         </select>
                         
+                        <button id="btnSurface" onclick="toggleSurface()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors hidden">
+                            ☁ Oberfläche: AUS
+                        </button>
+                        
                         <div class="flex-1"></div>
 
                         <div class="flex items-center gap-2 bg-blue-100 p-1 rounded-lg border border-blue-200">
@@ -168,6 +171,7 @@
         let currentDisplayMode = "basic";
         
         let measureMode = false;
+        let showSurface = false; // Neu: Status für die Oberfläche
         let clickedAtoms = [];
         
         let activeTarget = 'basic'; 
@@ -202,10 +206,7 @@
             currentSmiles = jsmeApplet.smiles();
             document.getElementById('smilesInput').value = currentSmiles;
             
-            // IUPAC Abfrage starten
             fetchIUPAC(currentSmiles);
-            
-            // RDKit Analytik starten
             runRDKitAnalytics(currentSmiles);
             
             document.getElementById('btnMM').disabled = false;
@@ -213,35 +214,32 @@
             basicSdf = ""; refSdf = "";
             document.getElementById('modelToggleGroup').classList.add('hidden');
             document.getElementById('alignmentPanel').classList.add('hidden');
+            document.getElementById('btnSurface').classList.add('hidden');
+            
+            showSurface = false;
+            updateSurfaceButtonUI();
             
             resetTransforms();
             viewer.clear(); viewer.render();
             clearMeasurements();
         }
 
-        // --- RDKIT ANALYTIK LOGIK ---
         function runRDKitAnalytics(smiles) {
             const dash = document.getElementById('rdkitDashboard');
             dash.classList.remove('hidden');
-            
             if(!window.RDKit) return;
-            
             try {
                 let mol = window.RDKit.get_mol(smiles);
                 if(mol && mol.is_valid()) {
                     let desc = JSON.parse(mol.get_descriptors());
-                    
                     document.getElementById('rd_mw').innerText = desc.exactmw ? desc.exactmw.toFixed(2) : "--";
                     document.getElementById('rd_logp').innerText = desc.CrippenClogP ? desc.CrippenClogP.toFixed(2) : "--";
                     document.getElementById('rd_tpsa').innerText = desc.tpsa ? desc.tpsa.toFixed(1) : "--";
                     document.getElementById('rd_hbd').innerText = desc.NumHBD !== undefined ? desc.NumHBD : "--";
                     document.getElementById('rd_hba').innerText = desc.NumHBA !== undefined ? desc.NumHBA : "--";
-                    
-                    mol.delete(); // Memory Leak verhindern
+                    mol.delete(); 
                 }
-            } catch(e) {
-                console.error("RDKit Analyse Fehler:", e);
-            }
+            } catch(e) { console.error("RDKit Analyse Fehler:", e); }
         }
 
         async function fetchIUPAC(smiles) {
@@ -263,11 +261,10 @@
                 if (!response.ok) throw new Error("API Reject");
                 basicSdf = await response.text();
                 currentDisplayMode = "basic";
+                document.getElementById('btnSurface').classList.remove('hidden'); // Surface Option sichtbar
                 renderModels(true); 
                 document.getElementById('btnRef').disabled = false;
-            } catch (e) { 
-                alert("Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab."); 
-            }
+            } catch (e) { alert("Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab."); }
         }
 
         async function fetchQMReference() {
@@ -278,9 +275,7 @@
                 refSdf = await response.text();
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
                 setDisplayMode('overlay');
-            } catch (e) { 
-                alert("QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt."); 
-            }
+            } catch (e) { alert("QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt."); }
         }
 
         function setDisplayMode(mode) {
@@ -290,11 +285,15 @@
                     m === mode ? "mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" : "mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase";
             });
             
+            const btnSurf = document.getElementById('btnSurface');
+            
             if (mode === 'overlay') {
                 document.getElementById('alignmentPanel').classList.remove('hidden');
+                btnSurf.classList.add('hidden'); // Oberfläche im Overlay verbergen
                 syncSlidersToState();
             } else {
                 document.getElementById('alignmentPanel').classList.add('hidden');
+                btnSurf.classList.remove('hidden'); // Oberfläche wieder erlauben
                 if(mouseDockingActive) toggleMouseDocking(); 
             }
             
@@ -302,11 +301,31 @@
             clearMeasurements();
         }
 
+        function toggleSurface() {
+            showSurface = !showSurface;
+            updateSurfaceButtonUI();
+            renderModels(false);
+        }
+        
+        function updateSurfaceButtonUI() {
+            const btn = document.getElementById('btnSurface');
+            if(showSurface) {
+                btn.innerText = "☁ Oberfläche: EIN";
+                btn.classList.replace('bg-slate-200', 'bg-blue-600');
+                btn.classList.replace('hover:bg-slate-300', 'hover:bg-blue-500');
+                btn.classList.replace('text-slate-700', 'text-white');
+            } else {
+                btn.innerText = "☁ Oberfläche: AUS";
+                btn.classList.replace('bg-blue-600', 'bg-slate-200');
+                btn.classList.replace('hover:bg-blue-500', 'hover:bg-slate-300');
+                btn.classList.replace('text-white', 'text-slate-700');
+            }
+        }
+
         function transformSDF(sdf, t) {
             if (!sdf) return "";
             let rx = t.rx * Math.PI / 180, ry = t.ry * Math.PI / 180, rz = t.rz * Math.PI / 180;
             let cx = Math.cos(rx), sx = Math.sin(rx), cy = Math.cos(ry), sy = Math.sin(ry), cz = Math.cos(rz), sz = Math.sin(rz);
-            
             let m00 = cy*cz, m01 = sx*sy*cz - cx*sz, m02 = cx*sy*cz + sx*sz;
             let m10 = cy*sz, m11 = sx*sy*sz + cx*cz, m12 = cx*sy*sz - sx*cz;
             let m20 = -sy,   m21 = sx*cy,            m22 = cx*cy;
@@ -314,20 +333,11 @@
             let lines = sdf.split('\n');
             if(lines.length < 4) return sdf;
             let numAtoms = parseInt(lines[3].substring(0,3));
-            
             for(let i=0; i<numAtoms; i++) {
-                let idx = 4+i;
-                let line = lines[idx];
+                let idx = 4+i; let line = lines[idx];
                 if(line.length < 30) continue;
-                
-                let x = parseFloat(line.substring(0,10));
-                let y = parseFloat(line.substring(10,20));
-                let z = parseFloat(line.substring(20,30));
-
-                let nx = m00*x + m01*y + m02*z + t.tx;
-                let ny = m10*x + m11*y + m12*z + t.ty;
-                let nz = m20*x + m21*y + m22*z + t.tz;
-
+                let x = parseFloat(line.substring(0,10)), y = parseFloat(line.substring(10,20)), z = parseFloat(line.substring(20,30));
+                let nx = m00*x + m01*y + m02*z + t.tx, ny = m10*x + m11*y + m12*z + t.ty, nz = m20*x + m21*y + m22*z + t.tz;
                 lines[idx] = nx.toFixed(4).padStart(10, ' ') + ny.toFixed(4).padStart(10, ' ') + nz.toFixed(4).padStart(10, ' ') + line.substring(30);
             }
             return lines.join('\n');
@@ -353,11 +363,19 @@
             if (renderBasic && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(renderBasic, "sdf");
                 viewer.setStyle({model: 0}, getStyle(false));
+                // VDW Oberfläche hinzufügen, wenn im Einzelmodus
+                if(showSurface && currentDisplayMode !== 'overlay') {
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'lightgreyCarbon'}, {model: 0});
+                }
             }
             if (renderRef && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(renderRef, "sdf");
                 let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
                 viewer.setStyle({model: mIdx}, getStyle(true));
+                // VDW Oberfläche hinzufügen, wenn im Einzelmodus
+                if(showSurface && currentDisplayMode !== 'overlay') {
+                    viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'cyanCarbon'}, {model: mIdx});
+                }
             }
             
             if(autoZoom) { viewer.zoomTo(); } else { viewer.setView(savedView); }
@@ -413,8 +431,7 @@
 
         function setupMouseDocking() {
             const glass = document.getElementById('dockingGlass');
-            let isDragging = false;
-            let lastX = 0, lastY = 0;
+            let isDragging = false; let lastX = 0, lastY = 0;
 
             glass.addEventListener('mousedown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
             window.addEventListener('mouseup', () => isDragging = false);
@@ -451,7 +468,6 @@
             measureMode = !measureMode;
             const btn = document.getElementById('btnMeasure');
             const hint = document.getElementById('measureHint');
-            
             if(measureMode) {
                 if(mouseDockingActive) toggleMouseDocking(); 
                 btn.innerText = "Messen: EIN";
