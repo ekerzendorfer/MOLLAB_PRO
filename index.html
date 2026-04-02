@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molekül-Labor Pro | 3D-Puzzle & RDKit</title>
+    <title>Molecule Lab Pro | 3D-Docking & RDKit</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
@@ -16,17 +16,10 @@
         input[type=range] { accent-color: #3b82f6; }
         .glass-pane { position: absolute; inset: 0; z-index: 50; cursor: grab; }
         .glass-pane:active { cursor: grabbing; }
-        
-        /* Vollbild Klassen */
         .viewer-fullscreen {
-            position: fixed !important;
-            top: 0; left: 0; width: 100vw !important; height: 100vh !important;
-            z-index: 9999;
-            border-radius: 0 !important;
-            border: none !important;
-            background-color: inherit;
-            display: flex; flex-direction: column;
-            padding: 1rem;
+            position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important;
+            z-index: 9999; border-radius: 0 !important; border: none !important;
+            background-color: inherit; display: flex; flex-direction: column; padding: 1rem;
         }
         .viewer-container { position: relative; width: 100%; height: 500px; border-radius: 1rem; overflow: hidden; transition: all 0.3s; }
         .fullscreen-canvas { height: 100% !important; flex: 1; }
@@ -35,53 +28,57 @@
 <body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
 
     <div class="max-w-7xl mx-auto px-4 py-6">
-        <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex items-center justify-between gap-6">
+        <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex flex-wrap items-center justify-between gap-6">
             <div class="flex items-center gap-6">
                 <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🚀</div>
                 <div>
-                    <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Docking, Export & RDKit</p>
+                    <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic"><span data-i18n="title_main">Molekül-Labor</span> <span class="text-blue-600">Pro</span></h1>
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm" data-i18n="title_sub">3D-Docking, Export & RDKit</p>
                 </div>
             </div>
-            <div id="rdkitStatus" class="hidden md:block text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
-                ⏳ Lade RDKit Engine...
+            <div class="flex items-center gap-4">
+                <div id="rdkitStatus" class="hidden md:block text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-200" data-i18n="rdkit_loading">
+                    ⏳ Lade RDKit Engine...
+                </div>
+                <div class="bg-slate-200 rounded-lg p-1 flex font-bold text-xs">
+                    <button onclick="setLang('de')" id="lang_de" class="px-3 py-1 rounded bg-white text-blue-900 shadow-sm">🇩🇪 DE</button>
+                    <button onclick="setLang('en')" id="lang_en" class="px-3 py-1 rounded text-slate-500 hover:text-slate-700">🇬🇧 EN</button>
+                </div>
             </div>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <div class="lg:col-span-4 space-y-6">
                 <div id="step1" class="bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
-                    <h2 class="text-xl font-black text-slate-800 uppercase mb-2">1. Molekül Zeichnen</h2>
+                    <h2 class="text-xl font-black text-slate-800 uppercase mb-2" data-i18n="step1_title">1. Molekül Zeichnen</h2>
                     <div id="jsme_container" class="w-full h-[300px] bg-slate-50 rounded-xl overflow-hidden border border-slate-300"></div>
                     <div class="mt-4 flex gap-2">
-                        <button onclick="clean2D()" title="2D Struktur aufräumen" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 text-xl">🧹</button>
+                        <button onclick="clean2D()" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 text-xl">🧹</button>
                         <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" readonly>
-                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 uppercase text-xs">Start</button>
+                        <button onclick="getSmiles()" class="bg-blue-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-blue-500 uppercase text-xs" data-i18n="btn_start">Start</button>
                     </div>
                     
                     <div id="rdkitDashboard" class="hidden mt-6 bg-slate-900 p-5 rounded-xl border-b-4 border-blue-500 shadow-inner">
                         <h4 class="font-black uppercase text-[10px] text-blue-400 tracking-widest mb-3 border-b border-slate-700 pb-1 flex justify-between">
-                            <span>Molekül-Datenblatt</span>
-                            <span id="iupacName" class="text-yellow-400 normal-case font-mono">Lädt...</span>
+                            <span data-i18n="rdkit_title">Molekül-Datenblatt</span>
+                            <span id="iupacName" class="text-yellow-400 normal-case font-mono">...</span>
                         </h4>
                         <div class="grid grid-cols-2 gap-4 text-white">
                             <div>
-                                <span class="text-[9px] text-slate-400 uppercase block">Molmasse</span>
+                                <span class="text-[9px] text-slate-400 uppercase block" data-i18n="rdkit_mw">Molmasse</span>
                                 <span id="rd_mw" class="font-mono font-bold text-lg">--</span> <span class="text-xs text-slate-500">g/mol</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 uppercase block">Dipolmoment</span>
+                                <span class="text-[9px] text-slate-400 uppercase block" data-i18n="rdkit_dipole">Dipolmoment</span>
                                 <span id="pc_dipole" class="font-mono font-bold text-lg text-blue-300">--</span> <span class="text-xs text-slate-500">D</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 uppercase block">Polare Fläche (TPSA)</span>
+                                <span class="text-[9px] text-slate-400 uppercase block" data-i18n="rdkit_tpsa">Polare Fläche (TPSA)</span>
                                 <span id="rd_tpsa" class="font-mono font-bold text-lg">--</span> <span class="text-xs text-slate-500">Å²</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 uppercase block">H-Donoren / Akzept.</span>
-                                <span id="rd_hbd" class="font-mono font-bold text-lg text-green-400">--</span> 
-                                <span class="text-slate-500">/</span> 
-                                <span id="rd_hba" class="font-mono font-bold text-lg text-red-400">--</span>
+                                <span class="text-[9px] text-slate-400 uppercase block" data-i18n="rdkit_hbond">H-Donoren / Akzept.</span>
+                                <span id="rd_hbd" class="font-mono font-bold text-lg text-green-400">--</span> <span class="text-slate-500">/</span> <span id="rd_hba" class="font-mono font-bold text-lg text-red-400">--</span>
                             </div>
                         </div>
                     </div>
@@ -89,8 +86,8 @@
 
                 <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
                     <h3 class="text-blue-400 font-black uppercase text-sm mb-4">Pipeline</h3>
-                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ 2. Basis-3D</button>
-                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ 3. QM-Referenz</button>
+                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_basic3d">2. Basis-3D</span></button>
+                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_qmref">3. QM-Referenz</span></button>
                 </div>
             </div>
 
@@ -98,15 +95,15 @@
                 <div id="viewerWrapper" class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col transition-all">
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                        <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
+                        <h2 class="text-2xl font-black text-blue-900 uppercase" data-i18n="viewer_title">3D-Visualisierung</h2>
                         
                         <div class="flex items-center gap-4">
                             <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
-                                <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase">Basis</button>
-                                <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">QM-Ref</button>
+                                <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" data-i18n="tgl_basic">Basis</button>
+                                <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l" data-i18n="tgl_ref">QM-Ref</button>
                                 <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">Overlay</button>
                             </div>
-                            <button onclick="toggleFullscreen()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest">⛶ Vollbild</button>
+                            <button onclick="toggleFullscreen()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest">⛶ <span data-i18n="btn_fullscreen">Vollbild</span></button>
                         </div>
                     </div>
                     
@@ -117,49 +114,49 @@
                     
                     <div class="mt-4 flex flex-wrap gap-4 items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
                         <select id="styleSelect" onchange="renderModels(false)" class="bg-white border border-slate-300 text-sm rounded-lg p-2 font-bold outline-none">
-                            <option value="ballAndStick">Ball & Stick</option>
-                            <option value="stick">Stäbchen</option>
-                            <option value="sphere">Kalotten</option>
-                            <option value="line">Skelettformel</option>
+                            <option value="ballAndStick" data-i18n="opt_ballstick">Ball & Stick</option>
+                            <option value="stick" data-i18n="opt_stick">Stäbchen</option>
+                            <option value="sphere" data-i18n="opt_sphere">Kalotten</option>
+                            <option value="line" data-i18n="opt_line">Skelettformel</option>
                         </select>
                         
                         <button id="btnSurface" onclick="toggleSurface()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors hidden">
                             ☁ VDW
                         </button>
                         
-                        <button id="btnBgToggle" onclick="toggleBackground()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors">
+                        <button id="btnBgToggle" onclick="toggleBackground()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors" data-i18n="btn_bg">
                             Ansicht: Dunkel
                         </button>
 
                         <button onclick="exportImage()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors">
-                            📸 Export
+                            📸 <span data-i18n="btn_export">Export</span>
                         </button>
                         
                         <div class="flex-1"></div>
 
                         <div class="flex items-center gap-2 bg-blue-100 p-1 rounded-lg border border-blue-200">
                             <select id="measureType" onchange="clearMeasurements()" class="bg-transparent text-blue-900 font-bold text-xs uppercase outline-none cursor-pointer">
-                                <option value="dist">Abstand</option>
-                                <option value="angle">Winkel</option>
+                                <option value="dist" data-i18n="opt_dist">Abstand</option>
+                                <option value="angle" data-i18n="opt_angle">Winkel</option>
                             </select>
-                            <button id="btnMeasure" onclick="toggleMeasureMode()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded font-bold text-xs uppercase transition-colors">
+                            <button id="btnMeasure" onclick="toggleMeasureMode()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded font-bold text-xs uppercase transition-colors" data-i18n="btn_measure_off">
                                 Messen: AUS
                             </button>
-                            <button onclick="clearMeasurements()" class="bg-red-500 hover:bg-red-400 text-white px-2 py-1.5 rounded font-bold text-xs uppercase" title="Alle Messungen löschen">🗑</button>
+                            <button onclick="clearMeasurements()" class="bg-red-500 hover:bg-red-400 text-white px-2 py-1.5 rounded font-bold text-xs uppercase">🗑</button>
                         </div>
                     </div>
-                    <p id="measureHint" class="hidden text-xs text-blue-600 mt-2 font-bold text-center">Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.</p>
+                    <p id="measureHint" class="hidden text-xs text-blue-600 mt-2 font-bold text-center" data-i18n="msg_measure">Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.</p>
 
                     <div id="alignmentPanel" class="hidden mt-4 p-5 bg-indigo-950 rounded-2xl border border-indigo-800 text-indigo-100 shadow-inner">
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b border-indigo-800 pb-3 gap-4">
-                            <h4 class="font-black uppercase text-sm text-yellow-400 tracking-widest">3D-Docking Station</h4>
+                            <h4 class="font-black uppercase text-sm text-yellow-400 tracking-widest" data-i18n="docking_title">3D-Docking Station</h4>
                             
                             <div class="flex items-center gap-4">
                                 <div class="flex gap-2 text-xs font-bold uppercase bg-indigo-900 p-1 rounded-lg border border-indigo-700">
-                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="basic" checked onchange="changeTransformTarget()"> Basis</label>
-                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> QM-Ref</label>
+                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="basic" checked onchange="changeTransformTarget()"> <span data-i18n="tgl_basic">Basis</span></label>
+                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> <span data-i18n="tgl_ref">QM-Ref</span></label>
                                 </div>
-                                <button id="btnMouseDocking" onclick="toggleMouseDocking()" class="bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors">
+                                <button id="btnMouseDocking" onclick="toggleMouseDocking()" class="bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors" data-i18n="btn_docking_off">
                                     🖱 Maus-Docking: AUS
                                 </button>
                             </div>
@@ -167,20 +164,20 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-50 pointer-events-none" id="sliderGroup">
                             <div class="space-y-2">
-                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black">Feinjustierung Position</span>
-                                <input type="range" id="sl_tx" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
-                                <input type="range" id="sl_ty" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
-                                <input type="range" id="sl_tz" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black" data-i18n="docking_pos">Feinjustierung Position</span>
+                                <input type="range" id="sl_tx" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
+                                <input type="range" id="sl_ty" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
+                                <input type="range" id="sl_tz" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
                             </div>
                             <div class="space-y-2">
-                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black">Feinjustierung Rotation</span>
-                                <input type="range" id="sl_rx" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
-                                <input type="range" id="sl_ry" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
-                                <input type="range" id="sl_rz" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black" data-i18n="docking_rot">Feinjustierung Rotation</span>
+                                <input type="range" id="sl_rx" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
+                                <input type="range" id="sl_ry" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
+                                <input type="range" id="sl_rz" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg">
                             </div>
                         </div>
                         <div class="flex justify-between mt-4">
-                            <span class="text-[10px] text-indigo-400">Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)</span>
+                            <span class="text-[10px] text-indigo-400" data-i18n="docking_hint">Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)</span>
                             <button onclick="resetTransforms()" class="bg-indigo-800 hover:bg-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">↻ Reset</button>
                         </div>
                     </div>
@@ -190,6 +187,73 @@
     </div>
 
     <script>
+        // --- TRANSLATION DICTIONARY ---
+        const translations = {
+            de: {
+                title_main: "Molekül-Labor", title_sub: "3D-Docking, Export & RDKit",
+                rdkit_loading: "⏳ Lade RDKit Engine...", rdkit_ready: "✅ RDKit Engine bereit", rdkit_error: "❌ RDKit Ladefehler",
+                step1_title: "1. Molekül Zeichnen", btn_start: "Start",
+                rdkit_title: "Molekül-Datenblatt", rdkit_mw: "Molmasse", rdkit_dipole: "Dipolmoment", rdkit_tpsa: "Polare Fläche (TPSA)", rdkit_hbond: "H-Donoren / Akzept.",
+                btn_basic3d: "2. Basis-3D", btn_qmref: "3. QM-Referenz",
+                viewer_title: "3D-Visualisierung", tgl_basic: "Basis", tgl_ref: "QM-Ref",
+                btn_fullscreen: "Vollbild", opt_ballstick: "Ball & Stick", opt_stick: "Stäbchen", opt_sphere: "Kalotten", opt_line: "Skelettformel",
+                btn_bg: "Ansicht: Dunkel", btn_bg_light: "Ansicht: Hell", btn_export: "Export",
+                opt_dist: "Abstand", opt_angle: "Winkel",
+                btn_measure_off: "Messen: AUS", btn_measure_on: "Messen: EIN", msg_measure: "Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.",
+                docking_title: "3D-Docking Station", btn_docking_off: "🖱 Maus-Docking: AUS", btn_docking_on: "🖱 Maus-Docking: AKTIV",
+                docking_pos: "Feinjustierung Position", docking_rot: "Feinjustierung Rotation", docking_hint: "Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)",
+                err_cactus: "Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab.", err_pubchem: "QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt.",
+                status_search: "Sucht...", status_na: "Nicht in PubChem", status_err: "Fehler"
+            },
+            en: {
+                title_main: "Molecule Lab", title_sub: "3D-Docking, Export & RDKit",
+                rdkit_loading: "⏳ Loading RDKit Engine...", rdkit_ready: "✅ RDKit Engine ready", rdkit_error: "❌ RDKit Load Error",
+                step1_title: "1. Draw Molecule", btn_start: "Start",
+                rdkit_title: "Molecule Datasheet", rdkit_mw: "Mol. Weight", rdkit_dipole: "Dipole Moment", rdkit_tpsa: "Polar Surface (TPSA)", rdkit_hbond: "H-Donors / Accept.",
+                btn_basic3d: "2. Basic 3D", btn_qmref: "3. QM Reference",
+                viewer_title: "3D Visualization", tgl_basic: "Basic", tgl_ref: "QM-Ref",
+                btn_fullscreen: "Fullscreen", opt_ballstick: "Ball & Stick", opt_stick: "Stick", opt_sphere: "Spacefill", opt_line: "Line",
+                btn_bg: "View: Dark", btn_bg_light: "View: Light", btn_export: "Export",
+                opt_dist: "Distance", opt_angle: "Angle",
+                btn_measure_off: "Measure: OFF", btn_measure_on: "Measure: ON", msg_measure: "Click 2 atoms for distance, 3 atoms for angle.",
+                docking_title: "3D Docking Station", btn_docking_off: "🖱 Mouse Docking: OFF", btn_docking_on: "🖱 Mouse Docking: ON",
+                docking_pos: "Fine-tune Position", docking_rot: "Fine-tune Rotation", docking_hint: "Hint: Turn on mouse docking, then click in 3D window! (Shift+Click = Translate)",
+                err_cactus: "Basic-3D Error: NCI Cactus rejected this structure.", err_pubchem: "QM-Ref Error: PubChem has no 3D geometry available.",
+                status_search: "Searching...", status_na: "Not in PubChem", status_err: "Error"
+            }
+        };
+        
+        let currentLang = 'de';
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang][key]) el.innerHTML = translations[lang][key];
+            });
+            
+            // Toggle Buttons UI
+            if(lang === 'en') {
+                document.getElementById('lang_en').className = "px-3 py-1 rounded bg-white text-blue-900 shadow-sm";
+                document.getElementById('lang_de').className = "px-3 py-1 rounded text-slate-500 hover:text-slate-700";
+            } else {
+                document.getElementById('lang_de').className = "px-3 py-1 rounded bg-white text-blue-900 shadow-sm";
+                document.getElementById('lang_en').className = "px-3 py-1 rounded text-slate-500 hover:text-slate-700";
+            }
+            
+            // Update dynamic texts
+            updateSurfaceButtonUI();
+            if(isWhiteBg) document.getElementById('btnBgToggle').innerText = translations[lang].btn_bg_light;
+            else document.getElementById('btnBgToggle').innerText = translations[lang].btn_bg;
+            
+            if(measureMode) document.getElementById('btnMeasure').innerText = translations[lang].btn_measure_on;
+            else document.getElementById('btnMeasure').innerText = translations[lang].btn_measure_off;
+            
+            if(mouseDockingActive) document.getElementById('btnMouseDocking').innerText = translations[lang].btn_docking_on;
+            else document.getElementById('btnMouseDocking').innerText = translations[lang].btn_docking_off;
+        }
+
+        // --- CORE VARIABLES ---
         let jsmeApplet = null;
         let viewer = null;
         let currentSmiles = "";
@@ -206,16 +270,16 @@
         let mouseDockingActive = false;
         let transforms = { basic: { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 }, ref: { tx:0, ty:0, tz:0, rx:0, ry:0, rz:0 } };
 
-        // --- RDKIT INITIALISIERUNG ---
+        // --- RDKIT INIT ---
         window.initRDKitModule().then(function(instance) {
             window.RDKit = instance;
             const status = document.getElementById('rdkitStatus');
-            status.innerText = "✅ RDKit Engine bereit";
+            status.innerText = translations[currentLang].rdkit_ready;
             status.classList.replace('text-slate-400', 'text-green-600');
             status.classList.replace('bg-slate-50', 'bg-green-50');
             status.classList.replace('border-slate-200', 'border-green-300');
         }).catch(() => {
-            document.getElementById('rdkitStatus').innerText = "❌ RDKit Ladefehler";
+            document.getElementById('rdkitStatus').innerText = translations[currentLang].rdkit_error;
         });
 
         function jsmeOnLoad() {
@@ -225,6 +289,7 @@
         window.onload = () => {
             viewer = $3Dmol.createViewer(document.getElementById('viewer3D'), { backgroundColor: '#0f172a' });
             setupMouseDocking();
+            setLang('de'); // Init language
         };
 
         function clean2D() { if (jsmeApplet && jsmeApplet.smiles()) jsmeApplet.readGenericMolecularInput(jsmeApplet.smiles()); }
@@ -266,32 +331,26 @@
                     document.getElementById('rd_hba').innerText = desc.NumHBA !== undefined ? desc.NumHBA : "--";
                     mol.delete(); 
                 }
-            } catch(e) { console.error("RDKit Analyse Fehler:", e); }
+            } catch(e) { console.error(e); }
         }
 
         async function fetchPubChemData(smiles) {
             const nameEl = document.getElementById('iupacName');
             const dipoleEl = document.getElementById('pc_dipole');
-            nameEl.innerText = "Sucht...";
+            nameEl.innerText = translations[currentLang].status_search;
             dipoleEl.innerText = "--";
             try {
                 const encodedSmiles = encodeURIComponent(smiles);
-                // Hole IUPAC und Dipolmoment in einem Aufruf
                 const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/property/IUPACName,DipoleMoment/JSON`;
                 const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     const props = data.PropertyTable.Properties[0];
                     nameEl.innerText = props.IUPACName || "N/A";
-                    if(props.DipoleMoment !== undefined) {
-                        dipoleEl.innerText = props.DipoleMoment.toFixed(2);
-                    } else {
-                        dipoleEl.innerText = "N/A";
-                    }
-                } else { 
-                    nameEl.innerText = "Nicht in PubChem"; 
-                }
-            } catch (e) { nameEl.innerText = "Fehler"; }
+                    if(props.DipoleMoment !== undefined) dipoleEl.innerText = props.DipoleMoment.toFixed(2);
+                    else dipoleEl.innerText = "N/A";
+                } else { nameEl.innerText = translations[currentLang].status_na; }
+            } catch (e) { nameEl.innerText = translations[currentLang].status_err; }
         }
 
         async function fetchBasic3D() {
@@ -304,7 +363,7 @@
                 document.getElementById('btnSurface').classList.remove('hidden'); 
                 renderModels(true); 
                 document.getElementById('btnRef').disabled = false;
-            } catch (e) { alert("Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab."); }
+            } catch (e) { alert(translations[currentLang].err_cactus); }
         }
 
         async function fetchQMReference() {
@@ -315,10 +374,9 @@
                 refSdf = await response.text();
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
                 setDisplayMode('overlay');
-            } catch (e) { alert("QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt."); }
+            } catch (e) { alert(translations[currentLang].err_pubchem); }
         }
 
-        // --- NEUE UI FUNKTIONEN (Hintergrund, Export, Vollbild) ---
         function toggleBackground() {
             isWhiteBg = !isWhiteBg;
             const btn = document.getElementById('btnBgToggle');
@@ -327,13 +385,13 @@
                 viewer.setBackgroundColor('white');
                 canvas.classList.replace('bg-slate-900', 'bg-white');
                 canvas.classList.replace('border-slate-900', 'border-slate-300');
-                btn.innerText = "Ansicht: Hell";
+                btn.innerText = translations[currentLang].btn_bg_light;
                 btn.className = "bg-slate-200 text-slate-700 hover:bg-slate-300 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors";
             } else {
                 viewer.setBackgroundColor('#0f172a');
                 canvas.classList.replace('bg-white', 'bg-slate-900');
                 canvas.classList.replace('border-slate-300', 'border-slate-900');
-                btn.innerText = "Ansicht: Dunkel";
+                btn.innerText = translations[currentLang].btn_bg;
                 btn.className = "bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors";
             }
             viewer.render();
@@ -342,33 +400,21 @@
         function exportImage() {
             let uri = viewer.pngURI();
             let link = document.createElement('a');
-            link.download = 'Molekuel_3D.png';
-            link.href = uri;
-            link.click();
+            link.download = 'Molecule_3D.png'; link.href = uri; link.click();
         }
 
         function toggleFullscreen() {
             const wrapper = document.getElementById('viewerWrapper');
             const container = document.getElementById('canvasContainer');
             isFullscreen = !isFullscreen;
-            
             if(isFullscreen) {
-                wrapper.classList.add('viewer-fullscreen');
-                container.classList.add('fullscreen-canvas');
-                document.body.style.overflow = 'hidden'; // Scrollen im Hintergrund verhindern
+                wrapper.classList.add('viewer-fullscreen'); container.classList.add('fullscreen-canvas'); document.body.style.overflow = 'hidden';
             } else {
-                wrapper.classList.remove('viewer-fullscreen');
-                container.classList.remove('fullscreen-canvas');
-                document.body.style.overflow = 'auto';
+                wrapper.classList.remove('viewer-fullscreen'); container.classList.remove('fullscreen-canvas'); document.body.style.overflow = 'auto';
             }
-            // Viewer muss zwingend neu gerendert werden, um die Canvas-Größe anzupassen!
             setTimeout(() => { viewer.resize(); viewer.render(); }, 50);
         }
-
-        // ESC-Taste schließt Vollbild
-        document.addEventListener('keydown', (e) => {
-            if(e.key === "Escape" && isFullscreen) toggleFullscreen();
-        });
+        document.addEventListener('keydown', (e) => { if(e.key === "Escape" && isFullscreen) toggleFullscreen(); });
 
         function setDisplayMode(mode) {
             currentDisplayMode = mode;
@@ -376,40 +422,27 @@
                 document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1)).className = 
                     m === mode ? "mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" : "mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase";
             });
-            
             const btnSurf = document.getElementById('btnSurface');
             if (mode === 'overlay') {
                 document.getElementById('alignmentPanel').classList.remove('hidden');
-                btnSurf.classList.add('hidden'); 
-                syncSlidersToState();
+                btnSurf.classList.add('hidden'); syncSlidersToState();
             } else {
                 document.getElementById('alignmentPanel').classList.add('hidden');
-                btnSurf.classList.remove('hidden'); 
-                if(mouseDockingActive) toggleMouseDocking(); 
+                btnSurf.classList.remove('hidden'); if(mouseDockingActive) toggleMouseDocking(); 
             }
-            
-            renderModels(false);
-            clearMeasurements();
+            renderModels(false); clearMeasurements();
         }
 
-        function toggleSurface() {
-            showSurface = !showSurface;
-            updateSurfaceButtonUI();
-            renderModels(false);
-        }
+        function toggleSurface() { showSurface = !showSurface; updateSurfaceButtonUI(); renderModels(false); }
         
         function updateSurfaceButtonUI() {
             const btn = document.getElementById('btnSurface');
             if(showSurface) {
-                btn.innerText = "☁ VDW: EIN";
-                btn.classList.replace('bg-slate-200', 'bg-blue-600');
-                btn.classList.replace('hover:bg-slate-300', 'hover:bg-blue-500');
-                btn.classList.replace('text-slate-700', 'text-white');
+                btn.innerText = currentLang === 'de' ? "☁ VDW: EIN" : "☁ VDW: ON";
+                btn.classList.replace('bg-slate-200', 'bg-blue-600'); btn.classList.replace('hover:bg-slate-300', 'hover:bg-blue-500'); btn.classList.replace('text-slate-700', 'text-white');
             } else {
-                btn.innerText = "☁ VDW: AUS";
-                btn.classList.replace('bg-blue-600', 'bg-slate-200');
-                btn.classList.replace('hover:bg-blue-500', 'hover:bg-slate-300');
-                btn.classList.replace('text-white', 'text-slate-700');
+                btn.innerText = currentLang === 'de' ? "☁ VDW: AUS" : "☁ VDW: OFF";
+                btn.classList.replace('bg-blue-600', 'bg-slate-200'); btn.classList.replace('hover:bg-blue-500', 'hover:bg-slate-300'); btn.classList.replace('text-white', 'text-slate-700');
             }
         }
 
@@ -421,12 +454,10 @@
             let m10 = cy*sz, m11 = sx*sy*sz + cx*cz, m12 = cx*sy*sz - sx*cz;
             let m20 = -sy,   m21 = sx*cy,            m22 = cx*cy;
 
-            let lines = sdf.split('\n');
-            if(lines.length < 4) return sdf;
+            let lines = sdf.split('\n'); if(lines.length < 4) return sdf;
             let numAtoms = parseInt(lines[3].substring(0,3));
             for(let i=0; i<numAtoms; i++) {
-                let idx = 4+i; let line = lines[idx];
-                if(line.length < 30) continue;
+                let idx = 4+i; let line = lines[idx]; if(line.length < 30) continue;
                 let x = parseFloat(line.substring(0,10)), y = parseFloat(line.substring(10,20)), z = parseFloat(line.substring(20,30));
                 let nx = m00*x + m01*y + m02*z + t.tx, ny = m10*x + m11*y + m12*z + t.ty, nz = m20*x + m21*y + m22*z + t.tz;
                 lines[idx] = nx.toFixed(4).padStart(10, ' ') + ny.toFixed(4).padStart(10, ' ') + nz.toFixed(4).padStart(10, ' ') + line.substring(30);
@@ -435,10 +466,8 @@
         }
 
         function renderModels(autoZoom = true) {
-            let savedView = viewer.getView();
-            viewer.clear();
+            let savedView = viewer.getView(); viewer.clear();
             const style = document.getElementById('styleSelect').value;
-            
             let getStyle = (isRef) => {
                 let c = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
                 if(style === 'ballAndStick') return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
@@ -452,20 +481,16 @@
             let renderRef = refSdf ? transformSDF(refSdf, transforms.ref) : "";
 
             if (renderBasic && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(renderBasic, "sdf");
-                viewer.setStyle({model: 0}, getStyle(false));
+                viewer.addModel(renderBasic, "sdf"); viewer.setStyle({model: 0}, getStyle(false));
                 if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'lightgreyCarbon'}, {model: 0});
             }
             if (renderRef && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(renderRef, "sdf");
-                let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
+                viewer.addModel(renderRef, "sdf"); let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
                 viewer.setStyle({model: mIdx}, getStyle(true));
                 if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'cyanCarbon'}, {model: mIdx});
             }
-            
             if(autoZoom) { viewer.zoomTo(); } else { viewer.setView(savedView); }
-            viewer.render();
-            bindMeasurementClicks(); 
+            viewer.render(); bindMeasurementClicks(); 
         }
 
         function changeTransformTarget() { activeTarget = document.querySelector('input[name="moveTarget"]:checked').value; syncSlidersToState(); }
@@ -477,12 +502,12 @@
             const sliders = document.getElementById('sliderGroup');
             
             if (mouseDockingActive) {
-                btn.innerText = "🖱 Maus-Docking: AKTIV";
+                btn.innerText = translations[currentLang].btn_docking_on;
                 btn.className = "bg-green-500 border border-green-400 hover:bg-green-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors shadow-[0_0_10px_rgba(34,197,94,0.5)]";
                 glass.classList.remove('hidden'); sliders.classList.remove('opacity-50', 'pointer-events-none'); 
                 if(measureMode) toggleMeasureMode(); 
             } else {
-                btn.innerText = "🖱 Maus-Docking: AUS";
+                btn.innerText = translations[currentLang].btn_docking_off;
                 btn.className = "bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors";
                 glass.classList.add('hidden'); sliders.classList.add('opacity-50', 'pointer-events-none');
             }
@@ -491,9 +516,7 @@
         function syncSlidersToState() {
             let t = transforms[activeTarget];
             document.getElementById('sl_tx').value = t.tx; document.getElementById('sl_ty').value = t.ty; document.getElementById('sl_tz').value = t.tz;
-            document.getElementById('sl_rx').value = ((t.rx % 360) + 360) % 360; 
-            document.getElementById('sl_ry').value = ((t.ry % 360) + 360) % 360; 
-            document.getElementById('sl_rz').value = ((t.rz % 360) + 360) % 360;
+            document.getElementById('sl_rx').value = ((t.rx % 360) + 360) % 360; document.getElementById('sl_ry').value = ((t.ry % 360) + 360) % 360; document.getElementById('sl_rz').value = ((t.rz % 360) + 360) % 360;
         }
 
         function updateTransformFromSliders() {
@@ -503,10 +526,7 @@
             renderModels(false); 
         }
 
-        function resetTransforms() {
-            transforms = { basic: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0}, ref: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0} };
-            syncSlidersToState(); renderModels(false);
-        }
+        function resetTransforms() { transforms = { basic: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0}, ref: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0} }; syncSlidersToState(); renderModels(false); }
 
         function setupMouseDocking() {
             const glass = document.getElementById('dockingGlass');
@@ -539,14 +559,12 @@
             const hint = document.getElementById('measureHint');
             if(measureMode) {
                 if(mouseDockingActive) toggleMouseDocking(); 
-                btn.innerText = "Messen: EIN";
-                btn.classList.replace('bg-blue-600', 'bg-green-600');
-                btn.classList.replace('hover:bg-blue-500', 'hover:bg-green-500');
+                btn.innerText = translations[currentLang].btn_measure_on;
+                btn.classList.replace('bg-blue-600', 'bg-green-600'); btn.classList.replace('hover:bg-blue-500', 'hover:bg-green-500');
                 hint.classList.remove('hidden');
             } else {
-                btn.innerText = "Messen: AUS";
-                btn.classList.replace('bg-green-600', 'bg-blue-600');
-                btn.classList.replace('hover:bg-green-500', 'hover:bg-blue-500');
+                btn.innerText = translations[currentLang].btn_measure_off;
+                btn.classList.replace('bg-green-600', 'bg-blue-600'); btn.classList.replace('hover:bg-green-500', 'hover:bg-blue-500');
                 hint.classList.add('hidden');
                 clearMeasurements();
             }
@@ -568,14 +586,11 @@
                     viewer.addCylinder({ start: {x:a1.x, y:a1.y, z:a1.z}, end: {x:a2.x, y:a2.y, z:a2.z}, radius: 0.05, color: 'yellow', dashed: true });
                     viewer.addLabel(dist.toFixed(3) + " Å", { position: {x: (a1.x+a2.x)/2, y: (a1.y+a2.y)/2, z: (a1.z+a2.z)/2}, backgroundColor: 'black', backgroundOpacity: 0.8, fontColor: 'yellow' });
                     clickedAtoms = []; viewer.render();
-                } 
-                else if (mType === 'angle' && clickedAtoms.length === 3) {
+                } else if (mType === 'angle' && clickedAtoms.length === 3) {
                     let a1 = clickedAtoms[0], a2 = clickedAtoms[1], a3 = clickedAtoms[2]; 
-                    let v1 = {x: a1.x-a2.x, y: a1.y-a2.y, z: a1.z-a2.z};
-                    let v2 = {x: a3.x-a2.x, y: a3.y-a2.y, z: a3.z-a2.z};
+                    let v1 = {x: a1.x-a2.x, y: a1.y-a2.y, z: a1.z-a2.z}, v2 = {x: a3.x-a2.x, y: a3.y-a2.y, z: a3.z-a2.z};
                     let dot = v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-                    let mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y + v1.z*v1.z);
-                    let mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
+                    let mag1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y + v1.z*v1.z), mag2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z);
                     let angle = Math.acos(dot / (mag1 * mag2)) * (180 / Math.PI);
                     viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a1.x, y:a1.y, z:a1.z}, radius: 0.05, color: 'yellow', dashed: true });
                     viewer.addCylinder({ start: {x:a2.x, y:a2.y, z:a2.z}, end: {x:a3.x, y:a3.y, z:a3.z}, radius: 0.05, color: 'yellow', dashed: true });
