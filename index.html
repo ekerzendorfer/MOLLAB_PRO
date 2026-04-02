@@ -16,6 +16,20 @@
         input[type=range] { accent-color: #3b82f6; }
         .glass-pane { position: absolute; inset: 0; z-index: 50; cursor: grab; }
         .glass-pane:active { cursor: grabbing; }
+        
+        /* Vollbild Klassen */
+        .viewer-fullscreen {
+            position: fixed !important;
+            top: 0; left: 0; width: 100vw !important; height: 100vh !important;
+            z-index: 9999;
+            border-radius: 0 !important;
+            border: none !important;
+            background-color: inherit;
+            display: flex; flex-direction: column;
+            padding: 1rem;
+        }
+        .viewer-container { position: relative; width: 100%; height: 500px; border-radius: 1rem; overflow: hidden; transition: all 0.3s; }
+        .fullscreen-canvas { height: 100% !important; flex: 1; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
@@ -26,7 +40,7 @@
                 <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🚀</div>
                 <div>
                     <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic">Molekül-Labor <span class="text-blue-600">Pro</span></h1>
-                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Docking, VDW-Oberflächen & RDKit</p>
+                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm">3D-Docking, Export & RDKit</p>
                 </div>
             </div>
             <div id="rdkitStatus" class="hidden md:block text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
@@ -47,7 +61,7 @@
                     
                     <div id="rdkitDashboard" class="hidden mt-6 bg-slate-900 p-5 rounded-xl border-b-4 border-blue-500 shadow-inner">
                         <h4 class="font-black uppercase text-[10px] text-blue-400 tracking-widest mb-3 border-b border-slate-700 pb-1 flex justify-between">
-                            <span>RDKit Molekül-Analyse</span>
+                            <span>Molekül-Datenblatt</span>
                             <span id="iupacName" class="text-yellow-400 normal-case font-mono">Lädt...</span>
                         </h4>
                         <div class="grid grid-cols-2 gap-4 text-white">
@@ -56,8 +70,8 @@
                                 <span id="rd_mw" class="font-mono font-bold text-lg">--</span> <span class="text-xs text-slate-500">g/mol</span>
                             </div>
                             <div>
-                                <span class="text-[9px] text-slate-400 uppercase block">Lipophilie (cLogP)</span>
-                                <span id="rd_logp" class="font-mono font-bold text-lg">--</span>
+                                <span class="text-[9px] text-slate-400 uppercase block">Dipolmoment</span>
+                                <span id="pc_dipole" class="font-mono font-bold text-lg text-blue-300">--</span> <span class="text-xs text-slate-500">D</span>
                             </div>
                             <div>
                                 <span class="text-[9px] text-slate-400 uppercase block">Polare Fläche (TPSA)</span>
@@ -81,18 +95,22 @@
             </div>
 
             <div class="lg:col-span-8">
-                <div class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col">
+                <div id="viewerWrapper" class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col transition-all">
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                         <h2 class="text-2xl font-black text-blue-900 uppercase">3D-Visualisierung</h2>
-                        <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
-                            <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase">Basis</button>
-                            <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">QM-Ref</button>
-                            <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">Overlay</button>
+                        
+                        <div class="flex items-center gap-4">
+                            <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+                                <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase">Basis</button>
+                                <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">QM-Ref</button>
+                                <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">Overlay</button>
+                            </div>
+                            <button onclick="toggleFullscreen()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest">⛶ Vollbild</button>
                         </div>
                     </div>
                     
-                    <div class="relative w-full h-[500px] bg-slate-900 border-4 border-slate-900 rounded-2xl overflow-hidden">
+                    <div class="relative w-full viewer-container bg-slate-900 border-4 border-slate-900" id="canvasContainer">
                         <div id="viewer3D" class="absolute inset-0"></div>
                         <div id="dockingGlass" class="glass-pane hidden"></div>
                     </div>
@@ -106,7 +124,15 @@
                         </select>
                         
                         <button id="btnSurface" onclick="toggleSurface()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors hidden">
-                            ☁ Oberfläche: AUS
+                            ☁ VDW
+                        </button>
+                        
+                        <button id="btnBgToggle" onclick="toggleBackground()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors">
+                            Ansicht: Dunkel
+                        </button>
+
+                        <button onclick="exportImage()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors">
+                            📸 Export
                         </button>
                         
                         <div class="flex-1"></div>
@@ -171,7 +197,9 @@
         let currentDisplayMode = "basic";
         
         let measureMode = false;
-        let showSurface = false; // Neu: Status für die Oberfläche
+        let showSurface = false;
+        let isWhiteBg = false;
+        let isFullscreen = false;
         let clickedAtoms = [];
         
         let activeTarget = 'basic'; 
@@ -206,7 +234,7 @@
             currentSmiles = jsmeApplet.smiles();
             document.getElementById('smilesInput').value = currentSmiles;
             
-            fetchIUPAC(currentSmiles);
+            fetchPubChemData(currentSmiles);
             runRDKitAnalytics(currentSmiles);
             
             document.getElementById('btnMM').disabled = false;
@@ -233,7 +261,6 @@
                 if(mol && mol.is_valid()) {
                     let desc = JSON.parse(mol.get_descriptors());
                     document.getElementById('rd_mw').innerText = desc.exactmw ? desc.exactmw.toFixed(2) : "--";
-                    document.getElementById('rd_logp').innerText = desc.CrippenClogP ? desc.CrippenClogP.toFixed(2) : "--";
                     document.getElementById('rd_tpsa').innerText = desc.tpsa ? desc.tpsa.toFixed(1) : "--";
                     document.getElementById('rd_hbd').innerText = desc.NumHBD !== undefined ? desc.NumHBD : "--";
                     document.getElementById('rd_hba').innerText = desc.NumHBA !== undefined ? desc.NumHBA : "--";
@@ -242,15 +269,28 @@
             } catch(e) { console.error("RDKit Analyse Fehler:", e); }
         }
 
-        async function fetchIUPAC(smiles) {
+        async function fetchPubChemData(smiles) {
             const nameEl = document.getElementById('iupacName');
+            const dipoleEl = document.getElementById('pc_dipole');
             nameEl.innerText = "Sucht...";
+            dipoleEl.innerText = "--";
             try {
-                const response = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodeURIComponent(smiles)}/property/IUPACName/JSON`);
+                const encodedSmiles = encodeURIComponent(smiles);
+                // Hole IUPAC und Dipolmoment in einem Aufruf
+                const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/${encodedSmiles}/property/IUPACName,DipoleMoment/JSON`;
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
-                    nameEl.innerText = data.PropertyTable.Properties[0].IUPACName || "N/A";
-                } else { nameEl.innerText = "Nicht in PubChem"; }
+                    const props = data.PropertyTable.Properties[0];
+                    nameEl.innerText = props.IUPACName || "N/A";
+                    if(props.DipoleMoment !== undefined) {
+                        dipoleEl.innerText = props.DipoleMoment.toFixed(2);
+                    } else {
+                        dipoleEl.innerText = "N/A";
+                    }
+                } else { 
+                    nameEl.innerText = "Nicht in PubChem"; 
+                }
             } catch (e) { nameEl.innerText = "Fehler"; }
         }
 
@@ -261,7 +301,7 @@
                 if (!response.ok) throw new Error("API Reject");
                 basicSdf = await response.text();
                 currentDisplayMode = "basic";
-                document.getElementById('btnSurface').classList.remove('hidden'); // Surface Option sichtbar
+                document.getElementById('btnSurface').classList.remove('hidden'); 
                 renderModels(true); 
                 document.getElementById('btnRef').disabled = false;
             } catch (e) { alert("Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab."); }
@@ -278,6 +318,58 @@
             } catch (e) { alert("QM-Referenz Fehler: PubChem hat keine 3D-Geometrie hinterlegt."); }
         }
 
+        // --- NEUE UI FUNKTIONEN (Hintergrund, Export, Vollbild) ---
+        function toggleBackground() {
+            isWhiteBg = !isWhiteBg;
+            const btn = document.getElementById('btnBgToggle');
+            const canvas = document.getElementById('canvasContainer');
+            if(isWhiteBg) {
+                viewer.setBackgroundColor('white');
+                canvas.classList.replace('bg-slate-900', 'bg-white');
+                canvas.classList.replace('border-slate-900', 'border-slate-300');
+                btn.innerText = "Ansicht: Hell";
+                btn.className = "bg-slate-200 text-slate-700 hover:bg-slate-300 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors";
+            } else {
+                viewer.setBackgroundColor('#0f172a');
+                canvas.classList.replace('bg-white', 'bg-slate-900');
+                canvas.classList.replace('border-slate-300', 'border-slate-900');
+                btn.innerText = "Ansicht: Dunkel";
+                btn.className = "bg-slate-800 text-white hover:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors";
+            }
+            viewer.render();
+        }
+
+        function exportImage() {
+            let uri = viewer.pngURI();
+            let link = document.createElement('a');
+            link.download = 'Molekuel_3D.png';
+            link.href = uri;
+            link.click();
+        }
+
+        function toggleFullscreen() {
+            const wrapper = document.getElementById('viewerWrapper');
+            const container = document.getElementById('canvasContainer');
+            isFullscreen = !isFullscreen;
+            
+            if(isFullscreen) {
+                wrapper.classList.add('viewer-fullscreen');
+                container.classList.add('fullscreen-canvas');
+                document.body.style.overflow = 'hidden'; // Scrollen im Hintergrund verhindern
+            } else {
+                wrapper.classList.remove('viewer-fullscreen');
+                container.classList.remove('fullscreen-canvas');
+                document.body.style.overflow = 'auto';
+            }
+            // Viewer muss zwingend neu gerendert werden, um die Canvas-Größe anzupassen!
+            setTimeout(() => { viewer.resize(); viewer.render(); }, 50);
+        }
+
+        // ESC-Taste schließt Vollbild
+        document.addEventListener('keydown', (e) => {
+            if(e.key === "Escape" && isFullscreen) toggleFullscreen();
+        });
+
         function setDisplayMode(mode) {
             currentDisplayMode = mode;
             ['basic', 'ref', 'overlay'].forEach(m => {
@@ -286,14 +378,13 @@
             });
             
             const btnSurf = document.getElementById('btnSurface');
-            
             if (mode === 'overlay') {
                 document.getElementById('alignmentPanel').classList.remove('hidden');
-                btnSurf.classList.add('hidden'); // Oberfläche im Overlay verbergen
+                btnSurf.classList.add('hidden'); 
                 syncSlidersToState();
             } else {
                 document.getElementById('alignmentPanel').classList.add('hidden');
-                btnSurf.classList.remove('hidden'); // Oberfläche wieder erlauben
+                btnSurf.classList.remove('hidden'); 
                 if(mouseDockingActive) toggleMouseDocking(); 
             }
             
@@ -310,12 +401,12 @@
         function updateSurfaceButtonUI() {
             const btn = document.getElementById('btnSurface');
             if(showSurface) {
-                btn.innerText = "☁ Oberfläche: EIN";
+                btn.innerText = "☁ VDW: EIN";
                 btn.classList.replace('bg-slate-200', 'bg-blue-600');
                 btn.classList.replace('hover:bg-slate-300', 'hover:bg-blue-500');
                 btn.classList.replace('text-slate-700', 'text-white');
             } else {
-                btn.innerText = "☁ Oberfläche: AUS";
+                btn.innerText = "☁ VDW: AUS";
                 btn.classList.replace('bg-blue-600', 'bg-slate-200');
                 btn.classList.replace('hover:bg-blue-500', 'hover:bg-slate-300');
                 btn.classList.replace('text-white', 'text-slate-700');
@@ -363,19 +454,13 @@
             if (renderBasic && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(renderBasic, "sdf");
                 viewer.setStyle({model: 0}, getStyle(false));
-                // VDW Oberfläche hinzufügen, wenn im Einzelmodus
-                if(showSurface && currentDisplayMode !== 'overlay') {
-                    viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'lightgreyCarbon'}, {model: 0});
-                }
+                if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'lightgreyCarbon'}, {model: 0});
             }
             if (renderRef && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
                 viewer.addModel(renderRef, "sdf");
                 let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
                 viewer.setStyle({model: mIdx}, getStyle(true));
-                // VDW Oberfläche hinzufügen, wenn im Einzelmodus
-                if(showSurface && currentDisplayMode !== 'overlay') {
-                    viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'cyanCarbon'}, {model: mIdx});
-                }
+                if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'cyanCarbon'}, {model: mIdx});
             }
             
             if(autoZoom) { viewer.zoomTo(); } else { viewer.setView(savedView); }
@@ -383,10 +468,7 @@
             bindMeasurementClicks(); 
         }
 
-        function changeTransformTarget() {
-            activeTarget = document.querySelector('input[name="moveTarget"]:checked').value;
-            syncSlidersToState();
-        }
+        function changeTransformTarget() { activeTarget = document.querySelector('input[name="moveTarget"]:checked').value; syncSlidersToState(); }
 
         function toggleMouseDocking() {
             mouseDockingActive = !mouseDockingActive;
@@ -397,14 +479,12 @@
             if (mouseDockingActive) {
                 btn.innerText = "🖱 Maus-Docking: AKTIV";
                 btn.className = "bg-green-500 border border-green-400 hover:bg-green-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors shadow-[0_0_10px_rgba(34,197,94,0.5)]";
-                glass.classList.remove('hidden'); 
-                sliders.classList.remove('opacity-50', 'pointer-events-none'); 
+                glass.classList.remove('hidden'); sliders.classList.remove('opacity-50', 'pointer-events-none'); 
                 if(measureMode) toggleMeasureMode(); 
             } else {
                 btn.innerText = "🖱 Maus-Docking: AUS";
                 btn.className = "bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors";
-                glass.classList.add('hidden'); 
-                sliders.classList.add('opacity-50', 'pointer-events-none');
+                glass.classList.add('hidden'); sliders.classList.add('opacity-50', 'pointer-events-none');
             }
         }
 
@@ -425,18 +505,14 @@
 
         function resetTransforms() {
             transforms = { basic: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0}, ref: {tx:0, ty:0, tz:0, rx:0, ry:0, rz:0} };
-            syncSlidersToState();
-            renderModels(false);
+            syncSlidersToState(); renderModels(false);
         }
 
         function setupMouseDocking() {
             const glass = document.getElementById('dockingGlass');
             let isDragging = false; let lastX = 0, lastY = 0;
-
             glass.addEventListener('mousedown', (e) => { isDragging = true; lastX = e.clientX; lastY = e.clientY; });
-            window.addEventListener('mouseup', () => isDragging = false);
-            window.addEventListener('touchend', () => isDragging = false); 
-            
+            window.addEventListener('mouseup', () => isDragging = false); window.addEventListener('touchend', () => isDragging = false); 
             glass.addEventListener('mousemove', (e) => {
                 if(!isDragging) return;
                 let dx = e.clientX - lastX; let dy = e.clientY - lastY;
@@ -445,7 +521,6 @@
                 if (e.shiftKey) { t.tx += dx * 0.05; t.ty -= dy * 0.05; } else { t.ry += dx * 1.5; t.rx += dy * 1.5; }
                 syncSlidersToState(); renderModels(false);
             });
-            
             glass.addEventListener('touchstart', (e) => { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; }, {passive: true});
             glass.addEventListener('touchmove', (e) => {
                 if(!isDragging) return;
@@ -455,13 +530,7 @@
                 if (e.touches.length > 1) { t.tx += dx * 0.05; t.ty -= dy * 0.05; } else { t.ry += dx * 1.5; t.rx += dy * 1.5; }
                 syncSlidersToState(); renderModels(false);
             }, {passive: true});
-
-            glass.addEventListener('wheel', (e) => {
-                e.preventDefault();
-                let t = transforms[activeTarget];
-                t.tz += e.deltaY * -0.05; 
-                syncSlidersToState(); renderModels(false);
-            });
+            glass.addEventListener('wheel', (e) => { e.preventDefault(); let t = transforms[activeTarget]; t.tz += e.deltaY * -0.05; syncSlidersToState(); renderModels(false); });
         }
 
         function toggleMeasureMode() {
@@ -484,22 +553,15 @@
             bindMeasurementClicks();
         }
 
-        function clearMeasurements() {
-            clickedAtoms = [];
-            viewer.removeAllShapes();
-            viewer.removeAllLabels();
-            viewer.render();
-        }
+        function clearMeasurements() { clickedAtoms = []; viewer.removeAllShapes(); viewer.removeAllLabels(); viewer.render(); }
 
         function bindMeasurementClicks() {
             viewer.setClickable({}, true, function(atom) {
                 if(!measureMode) return;
                 let mType = document.getElementById('measureType').value;
                 clickedAtoms.push(atom);
-                
                 viewer.addSphere({ center: {x: atom.x, y: atom.y, z: atom.z}, radius: 0.4, color: 'yellow', alpha: 0.6 });
                 viewer.render();
-
                 if (mType === 'dist' && clickedAtoms.length === 2) {
                     let a1 = clickedAtoms[0], a2 = clickedAtoms[1];
                     let dist = Math.sqrt(Math.pow(a2.x-a1.x, 2) + Math.pow(a2.y-a1.y, 2) + Math.pow(a2.z-a1.z, 2));
