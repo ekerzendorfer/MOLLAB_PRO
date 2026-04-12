@@ -177,8 +177,15 @@
                             </div>
                         </div>
                         <div class="flex justify-between mt-4">
-                            <span class="text-[10px] text-indigo-400" data-i18n="docking_hint">Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)</span>
-                            <button onclick="resetTransforms()" class="bg-indigo-800 hover:bg-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">↻ Reset</button>
+                            <span class="text-[10px] text-indigo-400" data-i18n="docking_hint">Tipp: Maus-Docking einschalten...</span>
+                            <div class="flex gap-2">
+                                <button onclick="mirrorMolecule()" class="bg-indigo-800 hover:bg-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-600 transition-colors">
+                                    ↔ <span data-i18n="btn_mirror">Spiegeln</span>
+                                </button>
+                                <button onclick="resetTransforms()" class="bg-indigo-800 hover:bg-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                                    ↻ Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -198,6 +205,7 @@
                 viewer_title: "3D-Visualisierung", tgl_basic: "Basis", tgl_ref: "QM-Ref",
                 btn_fullscreen: "Vollbild", opt_ballstick: "Ball & Stick", opt_stick: "Stäbchen", opt_sphere: "Kalotten", opt_line: "Skelettformel",
                 btn_bg: "Ansicht: Dunkel", btn_bg_light: "Ansicht: Hell", btn_export: "Export",
+                btn_mirror: "Spiegeln",
                 opt_dist: "Abstand", opt_angle: "Winkel",
                 btn_measure_off: "Messen: AUS", btn_measure_on: "Messen: EIN", msg_measure: "Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.",
                 docking_title: "3D-Docking Station", btn_docking_off: "🖱 Maus-Docking: AUS", btn_docking_on: "🖱 Maus-Docking: AKTIV",
@@ -214,6 +222,7 @@
                 viewer_title: "3D Visualization", tgl_basic: "Basic", tgl_ref: "QM-Ref",
                 btn_fullscreen: "Fullscreen", opt_ballstick: "Ball & Stick", opt_stick: "Stick", opt_sphere: "Spacefill", opt_line: "Line",
                 btn_bg: "View: Dark", btn_bg_light: "View: Light", btn_export: "Export",
+                btn_mirror: "Mirror",
                 opt_dist: "Distance", opt_angle: "Angle",
                 btn_measure_off: "Measure: OFF", btn_measure_on: "Measure: ON", msg_measure: "Click 2 atoms for distance, 3 atoms for angle.",
                 docking_title: "3D Docking Station", btn_docking_off: "🖱 Mouse Docking: OFF", btn_docking_on: "🖱 Mouse Docking: ON",
