@@ -311,24 +311,56 @@
             const dipoleEl = document.getElementById('pc_dipole');
             nameEl.innerText = translations[currentLang].status_search;
             dipoleEl.innerText = "--";
+            
             try {
+                // 1. CID holen
                 const formData = new URLSearchParams(); formData.append('smiles', smiles);
                 const cidRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/cids/JSON`, {
                     method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: formData
                 });
+                
                 if (cidRes.ok) {
                     const cidData = await cidRes.json();
                     const cid = cidData.IdentifierList.CID[0];
                     window.currentPubChemCID = cid;
-                    const propRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/IUPACName,DipoleMoment,MolecularWeight/JSON`);
-                    if (propRes.ok) {
-                        const data = await propRes.json(); const props = data.PropertyTable.Properties[0];
+                    
+                    // 2. Basis-Daten holen (IUPAC Name und Molmasse sind fast immer vorhanden)
+                    const basicRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/IUPACName,MolecularWeight/JSON`);
+                    if (basicRes.ok) {
+                        const data = await basicRes.json(); 
+                        const props = data.PropertyTable.Properties[0];
                         nameEl.innerText = props.IUPACName || "N/A";
-                        dipoleEl.innerText = props.DipoleMoment !== undefined ? props.DipoleMoment.toFixed(2) : "N/A";
                         if(props.MolecularWeight) document.getElementById('rd_mw').innerText = props.MolecularWeight;
-                    } else { nameEl.innerText = "N/A"; dipoleEl.innerText = "N/A"; }
-                } else { nameEl.innerText = translations[currentLang].status_na; dipoleEl.innerText = "N/A"; }
-            } catch (e) { nameEl.innerText = translations[currentLang].status_err; dipoleEl.innerText = "N/A"; }
+                    } else { 
+                        nameEl.innerText = "N/A"; 
+                    }
+
+                    // 3. Dipolmoment isoliert holen (da es oft fehlt und sonst einen API-Crash verursacht)
+                    try {
+                        const dipRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/DipoleMoment/JSON`);
+                        if (dipRes.ok) {
+                            const dipData = await dipRes.json();
+                            const dipProps = dipData.PropertyTable.Properties[0];
+                            if(dipProps.DipoleMoment !== undefined) {
+                                dipoleEl.innerText = dipProps.DipoleMoment.toFixed(2);
+                            } else {
+                                dipoleEl.innerText = "N/A";
+                            }
+                        } else {
+                            dipoleEl.innerText = "N/A";
+                        }
+                    } catch(e) {
+                        dipoleEl.innerText = "N/A";
+                    }
+
+                } else { 
+                    nameEl.innerText = translations[currentLang].status_na; 
+                    dipoleEl.innerText = "N/A"; 
+                }
+            } catch (e) { 
+                nameEl.innerText = translations[currentLang].status_err; 
+                dipoleEl.innerText = "N/A"; 
+            }
         }
 
         async function fetchBasic3D() {
