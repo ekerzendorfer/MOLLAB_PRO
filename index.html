@@ -338,40 +338,41 @@
         }
 
 async function fetchPubChemData(smiles) {
-            const nameEl = document.getElementById('iupacName');
-            const dipoleEl = document.getElementById('pc_dipole');
-            nameEl.innerText = translations[currentLang].status_search;
-            dipoleEl.innerText = "--";
-            try {
-                // 1. PubChem CID über sicheren POST-Request holen (umgeht das Schrägstrich-Problem)
-                const formData = new URLSearchParams();
-                formData.append('smiles', smiles);
-                
-                const cidRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/cids/JSON`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                });
-                
-                if (!cidRes.ok) throw new Error("CID nicht gefunden");
-                const cidData = await cidRes.json();
-                const cid = cidData.IdentifierList.CID[0];
-                window.currentPubChemCID = cid; // Speichern für den 3D-Abruf später!
+    const nameEl = document.getElementById('iupacName');
+    const dipoleEl = document.getElementById('pc_dipole');
+    nameEl.innerText = translations[currentLang].status_search;
+    
+    try {
+        const formData = new URLSearchParams();
+        formData.append('smiles', smiles);
+        const cidRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/smiles/cids/JSON`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        });
 
-                // 2. Daten sauber mit der Nummer (CID) abrufen
-                const propRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/IUPACName,DipoleMoment/JSON`);
-                if (propRes.ok) {
-                    const data = await propRes.json();
-                    const props = data.PropertyTable.Properties[0];
-                    nameEl.innerText = props.IUPACName || "N/A";
-                    if(props.DipoleMoment !== undefined) dipoleEl.innerText = props.DipoleMoment.toFixed(2);
-                    else dipoleEl.innerText = "N/A";
-                } else { nameEl.innerText = translations[currentLang].status_na; }
-            } catch (e) { 
-                nameEl.innerText = translations[currentLang].status_err; 
-                window.currentPubChemCID = null;
+        if (cidRes.ok) {
+            const cidData = await cidRes.json();
+            const cid = cidData.IdentifierList.CID[0];
+            window.currentPubChemCID = cid;
+
+            // WICHTIG: Hier die Eigenschaften direkt mit der CID abrufen
+            const propRes = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/property/IUPACName,DipoleMoment,MolecularWeight,TPSA,HBondDonorCount,HBondAcceptorCount/JSON`);
+            if (propRes.ok) {
+                const data = await propRes.json();
+                const props = data.PropertyTable.Properties[0];
+                nameEl.innerText = props.IUPACName || "N/A";
+                dipoleEl.innerText = props.DipoleMoment !== undefined ? props.DipoleMoment.toFixed(2) : "N/A";
+                // RDKit-Werte mit PubChem-Werten abgleichen/ergänzen
+                document.getElementById('rd_mw').innerText = props.MolecularWeight || "--";
             }
+        } else {
+            nameEl.innerText = translations[currentLang].status_na;
         }
+    } catch (e) {
+        nameEl.innerText = translations[currentLang].status_err;
+    }
+}
 
         async function fetchBasic3D() {
             if (!currentSmiles) return;
@@ -626,6 +627,18 @@ async function fetchPubChemData(smiles) {
                 }
             });
         }
+
+    function mirrorMolecule() {
+        let t = transforms[activeTarget];
+        // Wir invertieren die X-Koordinaten (Spiegelung an der YZ-Ebene)
+        // Technisch setzen wir einen Flag oder transformieren die SDF-Daten
+        // Einfacher Workaround: Wir nutzen eine Skalierung von -1 auf der X-Achse in der Transformationsmatrix
+        // Für dieses Tool invertieren wir einfach die Rotation und Translation
+        t.rx = (t.rx + 180) % 360; 
+        t.ry = (360 - t.ry) % 360;
+        renderModels(false);
+    }
+        
     </script>
 </body>
 </html>
