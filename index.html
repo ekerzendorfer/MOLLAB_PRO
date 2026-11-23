@@ -377,6 +377,8 @@
             status.innerText = translations[currentLang].rdkit_ready;
             status.classList.replace('text-slate-400', 'text-green-600');
             status.classList.replace('bg-slate-50', 'bg-green-50');
+            // A URL-imported molecule can arrive before RDKit finishes loading.
+            if (currentSmiles) runRDKitAnalytics(currentSmiles);
         }).catch(() => { document.getElementById('rdkitStatus').innerText = translations[currentLang].rdkit_error; });
 
         function jsmeOnLoad() {
