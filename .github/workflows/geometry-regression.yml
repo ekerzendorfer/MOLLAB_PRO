@@ -1,0 +1,19 @@
+name: MOLLAB PRO geometry regression
+
+on:
+  push:
+    branches:
+      - main
+      - v0.2-layout-alignment
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run geometry and UI regression
+        run: node tests/geometry-alignment.test.cjs
