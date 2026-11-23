@@ -224,35 +224,35 @@
         // --- TRANSLATION ---
         const translations = {
             de: {
-                title_main: "Molekül-Labor", title_sub: "3D-Docking, Export & RDKit",
+                title_main: "MOLLAB", title_sub: "Molekülgeometrie und 3D-Vergleich · Vom 2D-Entwurf zum räumlichen Modell",
                 rdkit_loading: "⏳ Lade RDKit Engine...", rdkit_ready: "✅ RDKit Engine bereit", rdkit_error: "❌ RDKit Ladefehler",
-                step1_title: "1. Molekül Zeichnen", btn_start: "Start",
+                step1_title: "1. Molekül zeichnen", btn_start: "Start",
                 rdkit_title: "Molekül-Datenblatt", rdkit_mw: "Molmasse", rdkit_dipole: "Dipolmoment", rdkit_tpsa: "Polare Fläche (TPSA)", rdkit_hbond: "H-Donoren / Akzept.",
-                btn_basic3d: "2. Basis-3D", btn_qmref: "3. QM-Referenz",
-                viewer_title: "3D-Visualisierung", tgl_basic: "Basis", tgl_ref: "QM-Ref",
+                btn_basic3d: "2. 3D-Modell A erzeugen", btn_qmref: "3. PubChem-3D laden",
+                viewer_title: "3D-Darstellung", tgl_basic: "Modell A", tgl_ref: "PubChem B", tgl_side: "Nebeneinander", tgl_overlay: "Überlagerung",
                 btn_fullscreen: "Vollbild", opt_ballstick: "Ball & Stick", opt_stick: "Stäbchen", opt_sphere: "Kalotten", opt_line: "Skelettformel",
-                btn_bg: "Ansicht: Dunkel", btn_bg_light: "Ansicht: Hell", btn_export: "Export", btn_mirror: "Spiegeln",
+                btn_bg: "Ansicht: Dunkel", btn_bg_light: "Ansicht: Hell", btn_export: "Export",
                 opt_dist: "Abstand", opt_angle: "Winkel",
                 btn_measure_off: "Messen: AUS", btn_measure_on: "Messen: EIN", msg_measure: "Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.",
-                docking_title: "3D-Docking Station", btn_docking_off: "🖱 Mit Maus ausrichten: AUS", btn_docking_on: "🖱 Maus-Docking: AKTIV",
-                docking_pos: "Feinjustierung Position", docking_rot: "Feinjustierung Rotation", docking_hint: "Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)",
-                err_cactus: "Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab.", err_pubchem: "QM-Ref Error: PubChem hat keine 3D-Geometrie verfügbar.",
+                docking_title: "Geometrien ausrichten", btn_docking_off: "🖱 Maus-Ausrichtung: AUS", btn_docking_on: "🖱 Maus-Ausrichtung: EIN", btn_autoalign: "Automatisch ausrichten", btn_resetalign: "Automatik zurücksetzen",
+                docking_pos: "Manuelle Verschiebung", docking_rot: "Manuelle Drehung", docking_hint: "Maus-Ausrichtung einschalten: Ziehen dreht, Shift+Ziehen verschiebt.",
+                err_cactus: "Das 3D-Modell A konnte nicht geladen werden. Prüfe Struktur und Datenquelle.", err_pubchem: "PubChem hat für diesen Stoff keine geeignete 3D-Struktur bereitgestellt.",
                 status_search: "Sucht...", status_na: "Nicht in PubChem", status_err: "Fehler"
             },
             en: {
-                title_main: "Molecule Lab", title_sub: "3D-Docking, Export & RDKit",
+                title_main: "MOLLAB", title_sub: "Molecular geometry and 3D comparison · From 2D drawing to 3D model",
                 rdkit_loading: "⏳ Loading RDKit Engine...", rdkit_ready: "✅ RDKit Engine ready", rdkit_error: "❌ RDKit Load Error",
                 step1_title: "1. Draw Molecule", btn_start: "Start",
                 rdkit_title: "Molecule Datasheet", rdkit_mw: "Mol. Weight", rdkit_dipole: "Dipole Moment", rdkit_tpsa: "Polar Surface (TPSA)", rdkit_hbond: "H-Donors / Accept.",
-                btn_basic3d: "2. Basic 3D", btn_qmref: "3. QM Reference",
-                viewer_title: "3D Visualization", tgl_basic: "Basic", tgl_ref: "QM-Ref",
+                btn_basic3d: "2. Generate model A", btn_qmref: "3. Load PubChem 3D",
+                viewer_title: "3D visualization", tgl_basic: "Model A", tgl_ref: "PubChem B", tgl_side: "Side by side", tgl_overlay: "Overlay",
                 btn_fullscreen: "Fullscreen", opt_ballstick: "Ball & Stick", opt_stick: "Stick", opt_sphere: "Spacefill", opt_line: "Line",
-                btn_bg: "View: Dark", btn_bg_light: "View: Light", btn_export: "Export", btn_mirror: "Mirror",
+                btn_bg: "View: Dark", btn_bg_light: "View: Light", btn_export: "Export",
                 opt_dist: "Distance", opt_angle: "Angle",
                 btn_measure_off: "Measure: OFF", btn_measure_on: "Measure: ON", msg_measure: "Click 2 atoms for distance, 3 atoms for angle.",
-                docking_title: "3D Docking Station", btn_docking_off: "🖱 Mouse Docking: OFF", btn_docking_on: "🖱 Mouse Docking: ON",
-                docking_pos: "Fine-tune Position", docking_rot: "Fine-tune Rotation", docking_hint: "Hint: Turn on mouse docking, then click in 3D window! (Shift+Click = Translate)",
-                err_cactus: "Basic-3D Error: NCI Cactus rejected this structure.", err_pubchem: "QM-Ref Error: PubChem has no 3D geometry available.",
+                docking_title: "Align geometries", btn_docking_off: "🖱 Mouse alignment: OFF", btn_docking_on: "🖱 Mouse alignment: ON", btn_autoalign: "Auto-align", btn_resetalign: "Reset auto-alignment",
+                docking_pos: "Manual translation", docking_rot: "Manual rotation", docking_hint: "Enable mouse alignment: drag to rotate, Shift+drag to translate.",
+                err_cactus: "3D model A could not be loaded. Check structure and data source.", err_pubchem: "PubChem did not provide a suitable 3D structure.",
                 status_search: "Searching...", status_na: "Not in PubChem", status_err: "Error"
             }
         };
@@ -281,7 +281,7 @@
         }
 
         let jsmeApplet = null, viewer = null, currentSmiles = "";
-        let basicSdf = "", refSdf = "";
+        let basicSdf = "", refSdf = "", alignedRefSdf = "", alignmentData = null;
         let currentDisplayMode = "basic";
         let measureMode = false, showSurface = false, isWhiteBg = false, isFullscreen = false, clickedAtoms = [];
         let activeTarget = 'basic', mouseDockingActive = false;
@@ -316,7 +316,8 @@
             document.getElementById('modelToggleGroup').classList.add('hidden');
             document.getElementById('alignmentPanel').classList.add('hidden');
             document.getElementById('btnSurface').classList.add('hidden');
-            document.getElementById('btnMirrorGlobal').classList.add('hidden');
+            alignedRefSdf = ""; alignmentData = null;
+            setAlignmentSummary(currentLang === 'de' ? "Noch kein Geometrievergleich geladen." : "No geometry comparison loaded.");
             showSurface = false; updateSurfaceButtonUI(); resetTransforms(); viewer.clear(); viewer.render(); clearMeasurements();
         }
 
@@ -396,13 +397,14 @@
         async function fetchBasic3D() {
             if (!currentSmiles) return;
             try {
-                let safeSmiles = currentSmiles.replace(/[\/\\@]/g, '');
-                const response = await fetch(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(safeSmiles)}/file?format=sdf&get3d=true`);
+                // Stereochemische SMILES-Markierungen (@, /, \) bleiben erhalten.
+                const response = await fetch(`https://cactus.nci.nih.gov/chemical/structure/${encodeURIComponent(currentSmiles)}/file?format=sdf&get3d=true`);
                 if (!response.ok) throw new Error("API Reject");
-                basicSdf = await response.text();
+                basicSdf = window.MolGeo.centerSdf(await response.text());
+                alignedRefSdf = ""; alignmentData = null; refSdf = "";
                 currentDisplayMode = "basic";
                 document.getElementById('btnSurface').classList.remove('hidden'); 
-                document.getElementById('btnMirrorGlobal').classList.remove('hidden');
+                setAlignmentSummary(currentLang === 'de' ? "Modell A zentriert. Für den Vergleich PubChem-3D laden." : "Model A centered. Load PubChem 3D to compare.");
                 renderModels(true); document.getElementById('btnRef').disabled = false;
             } catch (e) { alert(translations[currentLang].err_cactus); }
         }
@@ -412,25 +414,14 @@
             try {
                 const response = await fetch(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${window.currentPubChemCID}/SDF?record_type=3d`);
                 if (!response.ok) throw new Error("API Reject");
-                refSdf = await response.text();
+                refSdf = window.MolGeo.centerSdf(await response.text());
                 document.getElementById('modelToggleGroup').classList.remove('hidden');
+                autoAlignModels(false);
                 setDisplayMode('overlay');
             } catch (e) { alert(translations[currentLang].err_pubchem); }
         }
 
-        function mirrorMolecule() {
-            // Erkennt das Ziel basierend auf dem Modus
-            let target = activeTarget;
-            if(currentDisplayMode === 'basic') target = 'basic';
-            if(currentDisplayMode === 'ref') target = 'ref';
-            
-            let t = transforms[target];
-            // Wir spiegeln durch eine 180° Y-Rotation und Inversion
-            // Das dreht das "Enantiomer" im Viewer um, damit es zum anderen passt
-            t.ry = (t.ry + 180) % 360;
-            t.rx = (360 - t.rx) % 360;
-            renderModels(false);
-        }
+        // Die frühere Spiegeln-Funktion war nur eine Drehung und ist entfernt.
 
         function toggleBackground() {
             isWhiteBg = !isWhiteBg; const btn = document.getElementById('btnBgToggle'); const canvas = document.getElementById('canvasContainer');
