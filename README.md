@@ -1,51 +1,48 @@
-# 🚀 Molecule Lab Pro (Molekül-Labor Pro)
+# MOLLAB PRO – Molekülgeometrie und 3D-Vergleich
 
-**A powerful, zero-installation, 100% client-side chemistry web app designed for education.**
+**Version:** v0.2.0 (23.11.2026) · CHEMIE mit KI · Browser-App für den Chemieunterricht
 
-Molecule Lab Pro bridges the gap between 2D chemical sketches and 3D molecular reality. It combines industry-standard cheminformatics tools and APIs into a single, seamless HTML file. No backend server, no logins, no paywalls – just pure, interactive chemistry running directly in your browser.
+Die Anwendung verbindet **2D-Molekülskizzen (JSME)** mit **interaktiven 3D-Modellen (3Dmol.js)** und einfachen molekularen Deskriptoren aus RDKit.js.
 
-Perfect for high school and undergraduate chemistry teachers to demonstrate VSEPR theory, steric hindrance, isomerism, and the difference between simple molecular mechanics (MM) and quantum mechanical (QM) optimizations.
+## Start
 
----
+**[MOLLAB PRO öffnen](https://ekerzendorfer.github.io/MOLLAB_PRO/)**
 
-## ✨ Key Features
+Die App benötigt Internetzugang für den JSME-Editor, RDKit.js, 3Dmol.js sowie die externen 3D-Datenquellen.
 
-* **✏️ 2D Sketching to 3D Reality:** Draw molecules using the integrated JSME editor (including a "cleanup" broom tool) and instantly generate 3D models.
-* **🔬 Live Cheminformatics (Powered by RDKit):** Calculates molecular weight, Lipophilicity (cLogP), Topological Polar Surface Area (TPSA), and H-bond donors/acceptors in real-time via WebAssembly.
-* **🌐 Database Integration:** Automatically fetches IUPAC names and true Dipole Moments, alongside highly optimized 3D reference geometries directly from the **PubChem** and **NCI Cactus** APIs.
-* **🧩 Interactive 3D Docking:** A unique "Overlay" mode that allows students to manually translate and rotate a basic 3D model onto a QM-optimized reference model. A brilliant spatial puzzle for the classroom!
-* **📐 Interactive Measurements:** Click atoms in the 3D viewer to measure bond distances (Å) and bond angles (°).
-* **🎨 Classroom-Ready Visuals:** Toggle between Ball & Stick, Spacefill, Stick, and Line styles. Generate Van-der-Waals (VDW) surfaces to visualize steric bulk.
-* **📸 Teacher-Friendly:** Includes a Dark/Light mode toggle, a Fullscreen mode for projector use, and a one-click PNG export button to create high-quality images for worksheets.
-* **🌍 Bilingual:** Seamless UI toggle between English (EN) and German (DE).
+## Grundablauf
 
----
+1. Molekül in einem großzügigen **2D-Sketcher** zeichnen und **Start** drücken. Die App übernimmt den erzeugten SMILES.
+2. **3D-Modell A erzeugen** – 3D-Struktur vom NCI Chemical Identifier Resolver (Cactus).
+3. Optional **PubChem-3D laden** – zusätzliches generiertes 3D-Konformer-Modell aus PubChem (keine quantenchemisch berechnete Geometrie).
+4. Bei beiden Modellen zwischen **Modell A**, **PubChem B**, **Nebeneinander** (gemeinsam drehbar) und **Überlagerung** wechseln.
 
-## 🛠️ How to Use (It's that simple)
+Im Überlagerungsmodus versucht die App beide Modelle automatisch nach entsprechender Schweratom-Nachbarschaft zuzuordnen und mittels rotations-/translationsbasierter Least-Squares-Anpassung optimal zu überlagern; sie zeigt einen **Schweratom-RMSD in Å** an. Die Zuordnung ist auf **36 schwere Atome** beschränkt. Ist sie nicht zuverlässig möglich, meldet die App das; sie **erfindet keinen RMSD**. Atome können in vielen symmetrischen Molekülen mehrere gleichwertige Zuordnungen haben; bei sehr vielen Möglichkeiten ist die Suche begrenzt und wird als eingeschränkt gekennzeichnet.
 
-Since Molecule Lab Pro is a fully client-side application relying on external APIs and WebAssembly, you don't need to install anything.
+Manuelle Verschiebung und Drehung bleiben möglich. Die beiden Originalstrukturen werden für die Darstellung jeweils um ihren Schwerpunkt zentriert. Die falsche frühere Schaltfläche **„Spiegeln“** wurde entfernt; echte Enantiomere werden nicht durch eine Drehung erzeugt. Stereochemische SMILES-Marker werden **nicht mehr entfernt**; die 3D-Stereochemie der externen Datenquelle ist bei chiralen Molekülen dennoch gesondert zu prüfen.
 
-**Option 1: Live Demo**
-Simply visit the GitHub Pages link (insert your link here: `https://ekerzendorfer.github.io/MOLEKUEL_LABOR_PRO/`)
+## Weitere Anzeigen
 
-**Option 2: Host it yourself**
-1. Download the `index.html`.
-2. Host it on any basic web server (like GitHub Pages, Netlify, or a local server) to ensure the RDKit WebAssembly (`.wasm`) module loads correctly without CORS restrictions.
+- RDKit-WebAssembly: einfache Molekül-Deskriptoren, etwa Molmasse, TPSA, H-Brücken-Donoren und -Akzeptoren.
+- Darstellung als Kugel-Stab, Stäbchen, Kalotten oder Linien, dazu Van-der-Waals-Oberfläche.
+- Abstand-/Winkelmessung im 3D-Viewer, Vollbild, Hell/Dunkel, PNG-Export.
+- Deutsch/Englisch umschaltbare Beschriftung.
 
----
+**Modellgrenzen:** Ein geometrischer Vergleich ist weder Protein-Ligand-Docking noch eine energetische Optimierung. NCI/3D-Strukturen und PubChem-Konformere sind nicht automatisch experimentelle Referenzgeometrien oder QM-optimiert. Ein kleiner RMSD beweist keine energetische Gleichwertigkeit. Für MMFF/UFF, Konformersuche und xTB-GFN2 steht weiterhin das separate [MOL_LAB-Colab-Notebook](https://colab.research.google.com/github/ekerzendorfer/MOL_LAB/blob/main/MOL_LAB.ipynb) zur Verfügung.
 
-## 🏗️ Technology Stack
+## Technischer Aufbau
 
-This tool stands on the shoulders of giants. It integrates:
-* **[JSME](https://jsme-editor.github.io/):** For 2D molecular drawing.
-* **[3Dmol.js](https://3dmol.csb.pitt.edu/):** For high-performance, WebGL-based 3D rendering.
-* **[RDKit.js](https://www.rdkit.org/):** Compiled to WebAssembly for instant, on-device cheminformatics analysis.
-* **[PubChem PUG REST API](https://pubchem.ncbi.nlm.nih.gov/):** For QM-optimized 3D geometries and molecular properties.
-* **[NCI Cactus API](https://cactus.nci.nih.gov/chemical/structure):** For rapid, rule-based 3D structure generation and IUPAC names.
-* **[Tailwind CSS](https://tailwindcss.com/):** For the responsive, modern user interface.
+- `index.html` – Oberfläche und bisherige Funktionen
+- `geometry-alignment.js` – SDF-V2000-Lesen, Schweratom-Zentrierung, Graphzuordnung, rotationsbasiertes Alignment, RMSD
+- `tests/geometry-alignment.test.cjs` – reproduzierbare mathematische und UI-Basistests
+- `.github/workflows/geometry-regression.yml` – GitHub-Actions-Regressionstests
 
----
+Die Daten kommen von [NCI Cactus](https://cactus.nci.nih.gov/chemical/structure) und [PubChem](https://pubchem.ncbi.nlm.nih.gov/); es gibt keinen eigenen Backend-Server.
 
-## 👨‍🏫 About the Author
+## Test vor Unterrichtsfreigabe
 
-Created by **Erich Kerzendorfer**, a retired austrian chemistry teacher passionate about digital education, with coding assistance from generative AI (namely mainly Google Gemini). The goal of this project is to democratize high-quality chemistry visualization tools for classrooms worldwide.
+Siehe [SMOKE_TEST_V0.2.md](docs/SMOKE_TEST_V0.2.md). Für die endgültige Freigabe müssen zusätzlich die externen Datenabrufe sowie die 2D-/3D-Bedienung in einem echten Browser geprüft werden.
+
+Das GitHub-Repository bleibt auch für die spätere Einbindung in die **MOLEKÜL-WERKSTATT** eigenständig.
+
+*Erstellt als Unterrichtswerkzeug im Projekt CHEMIE mit KI.*
