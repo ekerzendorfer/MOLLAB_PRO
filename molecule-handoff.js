@@ -21,7 +21,7 @@
     return label.slice(0,100) || "Molekül";
   }
   function safeContext(value) {
-    return value === "MW-001" ? "MW-001" : "frei";
+    return value === "MW-001" || value === "MW-002" ? value : "frei";
   }
   function makeLink(base, details) {
     const u = new URL(base || TARGET);
@@ -43,7 +43,7 @@
     const result = {
       ok: false, name: safeLabel(u.searchParams.get("name")),
       smiles: "", fromWerkstatt, context,
-      returnUrl: fromWerkstatt ? HOME + "#" + (context === "MW-001" ? "aufgabe" : "frei") : null,
+      returnUrl: fromWerkstatt ? HOME + (context === "MW-002" ? "?case=MW-002#aufgabe" : context === "MW-001" ? "#aufgabe" : "#frei") : null,
       error: ""
     };
     try {
