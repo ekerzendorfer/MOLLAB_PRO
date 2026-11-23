@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - v0.2-layout-alignment
+      - v0.2.2-multi-case-context
   workflow_dispatch:
 
 permissions:
