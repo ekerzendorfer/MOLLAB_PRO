@@ -1,6 +1,6 @@
 # MOLLAB PRO – Molekülgeometrie und 3D-Vergleich
 
-**Version:** v0.2.0 (23.11.2026) · CHEMIE mit KI · Browser-App für den Chemieunterricht
+**Version:** v0.2.1 (23.11.2026) · CHEMIE mit KI · Browser-App für den Chemieunterricht
 
 Die Anwendung verbindet **2D-Molekülskizzen (JSME)** mit **interaktiven 3D-Modellen (3Dmol.js)** und einfachen molekularen Deskriptoren aus RDKit.js.
 
@@ -34,7 +34,9 @@ Manuelle Verschiebung und Drehung bleiben möglich. Die beiden Originalstrukture
 
 - `index.html` – Oberfläche und bisherige Funktionen
 - `geometry-alignment.js` – SDF-V2000-Lesen, Schweratom-Zentrierung, Graphzuordnung, rotationsbasiertes Alignment, RMSD
+- `molecule-handoff.js` – validierte URL-basierte SMILES-Übernahme samt begrenztem Rücklink zur MOLEKÜL-WERKSTATT
 - `tests/geometry-alignment.test.cjs` – reproduzierbare mathematische und UI-Basistests
+- `tests/handoff.test.cjs` – URL-Übergabe, Stereochemie-Zeichen, Rücklink und UI-Regression
 - `.github/workflows/geometry-regression.yml` – GitHub-Actions-Regressionstests
 
 Die Daten kommen von [NCI Cactus](https://cactus.nci.nih.gov/chemical/structure) und [PubChem](https://pubchem.ncbi.nlm.nih.gov/); es gibt keinen eigenen Backend-Server.
@@ -46,3 +48,22 @@ Siehe [SMOKE_TEST_V0.2.md](docs/SMOKE_TEST_V0.2.md). Für die endgültige Freiga
 Das GitHub-Repository bleibt auch für die spätere Einbindung in die **MOLEKÜL-WERKSTATT** eigenständig.
 
 *Erstellt als Unterrichtswerkzeug im Projekt CHEMIE mit KI.*
+
+## V0.2.1 – Moleküle aus der MOLEKÜL-WERKSTATT übernehmen
+
+Die neue [MOLEKÜL-WERKSTATT](https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/) kann einen gewählten bzw. selbst eingegebenen SMILES direkt in den bestehenden JSME-Editor übergeben.
+
+Beispiellink:
+```text
+https://ekerzendorfer.github.io/MOLLAB_PRO/?smiles=CCO&name=Ethanol&source=molekuelwerkstatt&context=MW-001
+```
+
+- SMILES werden URL-kodiert übergeben und im **2D-Editor eingelesen**, sobald der Editor und der Viewer bereit sind.
+- **Keine automatische 3D-Berechnung:** Nutzer klicken wie bisher selbst auf `3D-Modell A erzeugen`.
+- Ein sichtbarer Rücklink führt entweder zurück zur Aufgabe MW-001 oder zum Bereich „Frei erkunden“.
+- Eigene Lernnotizen und Resultate werden **nicht** übermittelt.
+- Leere oder fehlerhafte SMILES werden nicht als valide Struktur ausgegeben; normales manuelles Zeichnen bleibt möglich.
+- Der Rücklink wird aus einem festen erlaubten Ziel abgeleitet, nicht aus einer beliebigen `return`-URL.
+- Für große Moleküle (etwa Calicheamicin) kann die externe 3D-Erzeugung scheitern; dafür steht das leistungsfähigere MOL_LAB-Colab-Notebook zur Verfügung.
+
+Der Link kann auch weiterhin ohne Parameter geöffnet werden. Für den vollständigen Browser-Test siehe [Übergabeabnahme in der Werkstatt](https://github.com/ekerzendorfer/MOLEKUELWERKSTATT/blob/main/docs/HANDOFF_V0.2.md).
