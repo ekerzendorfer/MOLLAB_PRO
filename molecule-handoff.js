@@ -1,5 +1,5 @@
-/* MOLEKÜL-WERKSTATT ↔ MOLLAB PRO: small URL handoff contract v0.2.0
-   Transport: ?smiles=<url-encoded>&name=<url-encoded>&source=molekuelwerkstatt&context=MW-001|frei
+/* MOLEKÜL-WERKSTATT ↔ MOLLAB PRO: small URL handoff contract v0.4.0
+   Transport: ?smiles=<url-encoded>&name=<url-encoded>&source=molekuelwerkstatt&context=MW-001|MW-002|MW-009|MW-015|MW-024|frei
    Only the SMILES/label/context cross apps; private learning notes stay in browser-local storage.
    A return address is NEVER read from the query string. */
 (function (root) {
@@ -21,7 +21,7 @@
     return label.slice(0,100) || "Molekül";
   }
   function safeContext(value) {
-    return value === "MW-001" || value === "MW-002" ? value : "frei";
+    return ["MW-001","MW-002","MW-009","MW-015","MW-024"].includes(value) ? value : "frei";
   }
   function makeLink(base, details) {
     const u = new URL(base || TARGET);
@@ -43,7 +43,7 @@
     const result = {
       ok: false, name: safeLabel(u.searchParams.get("name")),
       smiles: "", fromWerkstatt, context,
-      returnUrl: fromWerkstatt ? HOME + (context === "MW-002" ? "?case=MW-002#aufgabe" : context === "MW-001" ? "#aufgabe" : "#frei") : null,
+      returnUrl: fromWerkstatt ? HOME + (context === "MW-001" ? "#aufgabe" : context === "frei" ? "#frei" : "?case=" + context + "#aufgabe") : null,
       error: ""
     };
     try {
