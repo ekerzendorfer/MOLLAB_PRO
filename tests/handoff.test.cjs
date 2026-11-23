@@ -26,6 +26,15 @@ assert.equal(second.smiles,"S");
 assert.equal(second.context,"MW-002");
 assert.equal(second.returnUrl,"https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/?case=MW-002#aufgabe",
   "MW-002 should return to its own guided case rather than MW-001");
+for (const id of ["MW-009","MW-015","MW-024"]) {
+  const mol = id === "MW-009" ? "CCC=O" : id === "MW-015" ? "O=C=O" : "C1CCCCC1";
+  const link = handoff.makeLink(base,{smiles:mol,name:"Probe",context:id});
+  const parsed = handoff.readLink(link);
+  assert.equal(parsed.ok,true);
+  assert.equal(parsed.context,id);
+  assert.equal(parsed.smiles,mol);
+  assert.equal(parsed.returnUrl,"https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/?case="+id+"#aufgabe");
+}
 assert.equal(handoff.readLink(base), null, "normal MOLLAB launch must remain unchanged");
 
 const untrusted = new URL(handoff.makeLink(base,{smiles:"CCO",name:"Ethanol",context:"MW-001"}));
