@@ -16,4 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run geometry and UI regression
-        run: node tests/geometry-alignment.test.cjs
+        run: |
+          node tests/geometry-alignment.test.cjs
+          node tests/handoff.test.cjs
