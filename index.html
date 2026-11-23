@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molekül-Labor Pro | 3D-Puzzle & RDKit</title>
+    <title>MOLLAB PRO – Molekülgeometrie und 3D-Vergleich</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://3Dmol.csb.pitt.edu/build/3Dmol-min.js"></script>
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
     <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
+    <script src="./geometry-alignment.js?v=0.2.0"></script>
 
     <style>
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
@@ -23,21 +24,45 @@
         }
         .viewer-container { position: relative; width: 100%; height: 500px; border-radius: 1rem; overflow: hidden; transition: all 0.3s; }
         .fullscreen-canvas { height: 100% !important; flex: 1; }
+        /* MOLLAB PRO v0.2 – shared CHEMIE mit KI lab language */
+        body{background:#f1f6fa}
+        .app-hero{background:radial-gradient(circle at 82% 25%,rgba(36,157,192,.23),transparent 34%),linear-gradient(118deg,#071a31,#0d314e);color:#f7fbff;border:1px solid #22435b}
+        .app-mark{background:#154f71;color:#b2ecf4;border:1px solid #4f90a8}
+        .work-card{border:1px solid #dce5ee;box-shadow:0 12px 32px rgba(18,43,68,.08);border-radius:20px}
+        .pipeline-card{border:1px solid #d9e5ef;box-shadow:0 12px 28px rgba(18,43,68,.06);border-radius:20px}
+        .pipeline-card button{background:#115f86;border-color:#115f86;color:white}
+        .pipeline-card button:hover:not(:disabled){background:#0d4d6b}
+        .pipeline-card button:disabled{background:#e8eff5;border-color:#d9e4ed;color:#7890a1;opacity:1}
+        #jsme_container{height:450px!important;min-height:450px}
+        .viewer-container{height:550px}
+        .comparison-panel{background:#edf6f9;border:1px solid #c9e0ea;color:#173c57}
+        .comparison-panel input[type=range]{accent-color:#117c9e}
+        .comparison-panel .fine-toggle{background:#0b6587;color:#fff;border-color:#0b6587}
+        .comparison-panel .fine-toggle:hover{background:#0b5270}
+        .alignment-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0 14px}
+        .alignment-summary{margin:0 0 14px;padding:10px 13px;border-radius:10px;background:#fff;border:1px solid #cbdfe9;font-size:.84rem;color:#285570;line-height:1.45}
+        .alignment-actions button{border-radius:9px;padding:9px 12px;font-size:.82rem;font-weight:750}
+        .alignment-actions .auto{background:#126c8d;color:#fff}
+        .alignment-actions .auto:hover{background:#07516f}
+        .alignment-actions .reset{border:1px solid #a4c6d7;background:white;color:#145774}
+        .comparison-hint{font-size:.78rem;color:#45738c;line-height:1.45;margin:8px 0 0}
+        @media(max-width:1024px){#jsme_container{height:410px!important;min-height:410px}.viewer-container{height:510px}}
+        @media(max-width:640px){#jsme_container{height:365px!important;min-height:365px}.viewer-container{height:430px}.app-hero{border-radius:18px}}
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen font-sans text-slate-900 pb-20">
 
-    <div class="max-w-7xl mx-auto px-4 py-6">
-        <header class="bg-white p-6 rounded-[2rem] shadow-lg border border-slate-200 mb-8 flex flex-wrap items-center justify-between gap-6">
+    <div class="max-w-[1500px] mx-auto px-4 py-6">
+        <header class="app-hero p-6 rounded-[1.25rem] shadow-lg mb-7 flex flex-wrap items-center justify-between gap-6">
             <div class="flex items-center gap-6">
-                <div class="bg-blue-900 p-4 rounded-3xl text-yellow-400 text-4xl shadow-lg">🚀</div>
+                <div class="app-mark p-3 rounded-2xl text-4xl shadow-md" aria-hidden="true">⚛</div>
                 <div>
-                    <h1 class="text-4xl font-black text-blue-900 uppercase tracking-tighter italic"><span data-i18n="title_main">Molekül-Labor</span> <span class="text-blue-600">Pro</span></h1>
-                    <p class="text-slate-500 font-bold uppercase tracking-widest text-sm" data-i18n="title_sub">3D-Docking, Export & RDKit</p>
+                    <h1 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight"><span data-i18n="title_main">MOLLAB</span> <span class="text-cyan-300">PRO</span></h1>
+                    <p class="text-cyan-100 font-medium text-sm" data-i18n="title_sub">Molekülgeometrie und 3D-Vergleich · Vom 2D-Entwurf zum räumlichen Modell</p>
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <div id="rdkitStatus" class="hidden md:block text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-2 rounded-full border border-slate-200" data-i18n="rdkit_loading">
+                <div id="rdkitStatus" class="hidden md:block text-xs font-bold text-blue-100 tracking-wide bg-slate-800/40 px-4 py-2 rounded-full border border-blue-300/30" data-i18n="rdkit_loading">
                     ⏳ Lade RDKit Engine...
                 </div>
                 <div class="bg-slate-200 rounded-lg p-1 flex font-bold text-xs">
@@ -47,11 +72,11 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-4 space-y-6">
-                <div id="step1" class="bg-white p-6 rounded-[2rem] shadow-lg border-2 border-blue-500 step-active">
-                    <h2 class="text-xl font-black text-slate-800 uppercase mb-2" data-i18n="step1_title">1. Molekül Zeichnen</h2>
-                    <div id="jsme_container" class="w-full h-[300px] bg-slate-50 rounded-xl overflow-hidden border border-slate-300"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-5 space-y-5">
+                <div id="step1" class="work-card bg-white p-5 md:p-6 border-t-4 border-t-sky-700">
+                    <h2 class="text-xl font-bold text-slate-800 mb-3" data-i18n="step1_title">1. Molekül zeichnen</h2>
+                    <div id="jsme_container" class="w-full bg-slate-50 rounded-xl overflow-hidden border border-slate-300"></div>
                     <div class="mt-4 flex gap-2">
                         <button onclick="clean2D()" class="bg-slate-200 text-slate-700 px-4 py-3 rounded-xl font-bold hover:bg-slate-300 text-xl">🧹</button>
                         <input type="text" id="smilesInput" class="flex-1 p-3 bg-slate-100 border border-slate-300 rounded-xl font-mono text-xs" readonly>
@@ -84,24 +109,26 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-900 p-6 rounded-[2rem] shadow-lg border-b-[8px] border-blue-950 space-y-3">
-                    <h3 class="text-blue-400 font-black uppercase text-sm mb-4">Pipeline</h3>
+                <div class="pipeline-card bg-white p-5 md:p-6 space-y-3">
+                    <h3 class="text-sky-900 font-bold text-lg mb-1">3D-Modelle laden</h3>
+                    <p class="text-sm text-slate-600 mb-4">Erzeuge zuerst Modell A und lade bei Bedarf anschließend die 3D-Referenz für den Vergleich.</p>
                     <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_basic3d">2. Basis-3D</span></button>
                     <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_qmref">3. QM-Referenz</span></button>
                 </div>
             </div>
 
-            <div class="lg:col-span-8">
-                <div id="viewerWrapper" class="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-200 h-full flex flex-col transition-all">
+            <div class="lg:col-span-7">
+                <div id="viewerWrapper" class="work-card bg-white p-5 md:p-6 h-full flex flex-col transition-all">
                     
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-                        <h2 class="text-2xl font-black text-blue-900 uppercase" data-i18n="viewer_title">3D-Visualisierung</h2>
+                        <h2 class="text-xl md:text-2xl font-bold text-sky-950" data-i18n="viewer_title">3D-Darstellung</h2>
                         
                         <div class="flex items-center gap-4">
                             <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
                                 <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" data-i18n="tgl_basic">Basis</button>
                                 <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l" data-i18n="tgl_ref">QM-Ref</button>
-                                <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l">Overlay</button>
+                                <button onclick="setDisplayMode('side')" id="tglSide" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs border-l" data-i18n="tgl_side">Nebeneinander</button>
+                                <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs border-l" data-i18n="tgl_overlay">Überlagerung</button>
                             </div>
                             <button onclick="toggleFullscreen()" class="bg-slate-800 text-white hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-widest">⛶ <span data-i18n="btn_fullscreen">Vollbild</span></button>
                         </div>
@@ -120,9 +147,7 @@
                             <option value="line" data-i18n="opt_line">Skelettformel</option>
                         </select>
                         
-                        <button id="btnMirrorGlobal" onclick="mirrorMolecule()" class="hidden bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-300 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors">
-                            ↔ <span data-i18n="btn_mirror">Spiegeln</span>
-                        </button>
+                        <!-- Entfernt: frühere „Spiegeln“-Schaltfläche führte chemisch nur eine Drehung aus. -->
 
                         <button id="btnSurface" onclick="toggleSurface()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs uppercase transition-colors hidden">
                             ☁ VDW
@@ -151,38 +176,43 @@
                     </div>
                     <p id="measureHint" class="hidden text-xs text-blue-600 mt-2 font-bold text-center" data-i18n="msg_measure">Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.</p>
 
-                    <div id="alignmentPanel" class="hidden mt-4 p-5 bg-indigo-950 rounded-2xl border border-indigo-800 text-indigo-100 shadow-inner">
-                        <div class="flex flex-col md:flex-row justify-between items-center mb-4 border-b border-indigo-800 pb-3 gap-4">
-                            <h4 class="font-black uppercase text-sm text-yellow-400 tracking-widest" data-i18n="docking_title">3D-Docking Station</h4>
+                    <div id="alignmentPanel" class="comparison-panel hidden mt-4 p-5 rounded-2xl">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 border-b border-slate-200 pb-3 gap-3">
+                            <h4 class="font-bold text-lg text-sky-900" data-i18n="docking_title">Geometrien ausrichten</h4>
                             
                             <div class="flex items-center gap-4">
-                                <div class="flex gap-2 text-xs font-bold uppercase bg-indigo-900 p-1 rounded-lg border border-indigo-700">
+                                <div class="flex gap-2 text-xs font-bold bg-blue-50 p-1 rounded-lg border border-blue-200">
                                     <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="basic" checked onchange="changeTransformTarget()"> <span data-i18n="tgl_basic">Basis</span></label>
                                     <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> <span data-i18n="tgl_ref">QM-Ref</span></label>
                                 </div>
-                                <button id="btnMouseDocking" onclick="toggleMouseDocking()" class="bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors" data-i18n="btn_docking_off">
-                                    🖱 Maus-Docking: AUS
+                                <button id="btnMouseDocking" onclick="toggleMouseDocking()" class="fine-toggle border px-3 py-2 rounded-lg font-bold text-xs transition-colors" data-i18n="btn_docking_off">
+                                    🖱 Mit Maus ausrichten: AUS
                                 </button>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 opacity-50 pointer-events-none" id="sliderGroup">
+                        <div class="alignment-actions">
+                            <button type="button" id="btnAutoAlign" class="auto" onclick="autoAlignModels()" data-i18n="btn_autoalign">Automatisch ausrichten</button>
+                            <button type="button" class="reset" onclick="resetAutoAlignment()" data-i18n="btn_resetalign">Automatik zurücksetzen</button>
+                        </div>
+                        <p id="alignmentSummary" class="alignment-summary" role="status" aria-live="polite">Nach dem Laden wird die 3D-Überlagerung automatisch berechnet.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="sliderGroup">
                             <div class="space-y-2">
-                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black" data-i18n="docking_pos">Feinjustierung Position</span>
+                                <span class="text-[11px] tracking-wide text-sky-900 font-bold" data-i18n="docking_pos">Feinjustierung Position</span>
                                 <input type="range" id="sl_tx" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                                 <input type="range" id="sl_ty" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                                 <input type="range" id="sl_tz" min="-10" max="10" step="0.1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                             </div>
                             <div class="space-y-2">
-                                <span class="text-[10px] uppercase tracking-widest text-indigo-400 font-black" data-i18n="docking_rot">Feinjustierung Rotation</span>
+                                <span class="text-[11px] tracking-wide text-sky-900 font-bold" data-i18n="docking_rot">Feinjustierung Rotation</span>
                                 <input type="range" id="sl_rx" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                                 <input type="range" id="sl_ry" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                                 <input type="range" id="sl_rz" min="0" max="360" step="1" value="0" oninput="updateTransformFromSliders()" class="w-full h-1 bg-indigo-800 rounded-lg appearance-none cursor-pointer">
                             </div>
                         </div>
                         <div class="flex justify-between mt-4">
-                            <span class="text-[10px] text-indigo-400" data-i18n="docking_hint">Tipp: Maus-Docking einschalten...</span>
-                            <button onclick="resetTransforms()" class="bg-indigo-800 hover:bg-indigo-700 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest">↻ Reset</button>
+                            <span class="text-xs text-sky-800" data-i18n="docking_hint">Für manuelle Drehungen die Maus-Ausrichtung aktivieren.</span>
+                            <button onclick="resetTransforms()" class="border border-sky-300 bg-white text-sky-900 hover:bg-sky-50 px-3 py-2 rounded-lg text-xs font-bold">↻ Manuelle Korrekturen zurücksetzen</button>
                         </div>
                     </div>
                 </div>
@@ -204,7 +234,7 @@
                 btn_bg: "Ansicht: Dunkel", btn_bg_light: "Ansicht: Hell", btn_export: "Export", btn_mirror: "Spiegeln",
                 opt_dist: "Abstand", opt_angle: "Winkel",
                 btn_measure_off: "Messen: AUS", btn_measure_on: "Messen: EIN", msg_measure: "Klicke auf 2 Atome für Abstand, auf 3 Atome für Winkel.",
-                docking_title: "3D-Docking Station", btn_docking_off: "🖱 Maus-Docking: AUS", btn_docking_on: "🖱 Maus-Docking: AKTIV",
+                docking_title: "3D-Docking Station", btn_docking_off: "🖱 Mit Maus ausrichten: AUS", btn_docking_on: "🖱 Maus-Docking: AKTIV",
                 docking_pos: "Feinjustierung Position", docking_rot: "Feinjustierung Rotation", docking_hint: "Tipp: Maus-Docking einschalten, dann ins 3D-Fenster klicken! (Shift+Klick = Verschieben)",
                 err_cactus: "Basis-3D Fehler: NCI Cactus lehnt diese Struktur ab.", err_pubchem: "QM-Ref Error: PubChem hat keine 3D-Geometrie verfügbar.",
                 status_search: "Sucht...", status_na: "Nicht in PubChem", status_err: "Fehler"
