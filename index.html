@@ -112,8 +112,8 @@
                 <div class="pipeline-card bg-white p-5 md:p-6 space-y-3">
                     <h3 class="text-sky-900 font-bold text-lg mb-1">3D-Modelle laden</h3>
                     <p class="text-sm text-slate-600 mb-4">Erzeuge zuerst Modell A und lade bei Bedarf anschließend die 3D-Referenz für den Vergleich.</p>
-                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_basic3d">2. Basis-3D</span></button>
-                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_qmref">3. QM-Referenz</span></button>
+                    <button id="btnMM" onclick="fetchBasic3D()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_basic3d">2. 3D-Modell A erzeugen</span></button>
+                    <button id="btnRef" onclick="fetchQMReference()" disabled class="w-full bg-slate-700 text-slate-300 py-4 rounded-xl font-black uppercase text-left px-6 border border-slate-600 hover:bg-slate-600 disabled:opacity-50 transition-all">▶ <span data-i18n="btn_qmref">3. PubChem-3D laden</span></button>
                 </div>
             </div>
 
@@ -125,8 +125,8 @@
                         
                         <div class="flex items-center gap-4">
                             <div id="modelToggleGroup" class="hidden flex bg-slate-100 rounded-xl border border-slate-200 overflow-hidden">
-                                <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" data-i18n="tgl_basic">Basis</button>
-                                <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase border-l" data-i18n="tgl_ref">QM-Ref</button>
+                                <button onclick="setDisplayMode('basic')" id="tglBasic" class="mode-toggle-btn mode-active px-3 py-2 text-xs" data-i18n="tgl_basic">Modell A</button>
+                                <button onclick="setDisplayMode('ref')" id="tglRef" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs border-l" data-i18n="tgl_ref">PubChem B</button>
                                 <button onclick="setDisplayMode('side')" id="tglSide" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs border-l" data-i18n="tgl_side">Nebeneinander</button>
                                 <button onclick="setDisplayMode('overlay')" id="tglOverlay" class="mode-toggle-btn mode-inactive px-3 py-2 text-xs border-l" data-i18n="tgl_overlay">Überlagerung</button>
                             </div>
@@ -183,7 +183,7 @@
                             <div class="flex items-center gap-4">
                                 <div class="flex gap-2 text-xs font-bold bg-blue-50 p-1 rounded-lg border border-blue-200">
                                     <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="basic" checked onchange="changeTransformTarget()"> <span data-i18n="tgl_basic">Basis</span></label>
-                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> <span data-i18n="tgl_ref">QM-Ref</span></label>
+                                    <label class="cursor-pointer flex items-center gap-1 px-2"><input type="radio" name="moveTarget" value="ref" onchange="changeTransformTarget()"> <span data-i18n="tgl_ref">PubChem B</span></label>
                                 </div>
                                 <button id="btnMouseDocking" onclick="toggleMouseDocking()" class="fine-toggle border px-3 py-2 rounded-lg font-bold text-xs transition-colors" data-i18n="btn_docking_off">
                                     🖱 Mit Maus ausrichten: AUS
@@ -444,15 +444,62 @@
             setTimeout(() => { viewer.resize(); viewer.render(); }, 50);
         }
 
+        function setAlignmentSummary(message) {
+            const el = document.getElementById('alignmentSummary');
+            if (el) el.textContent = message;
+        }
+
+        function autoAlignModels(redraw = true) {
+            if (!basicSdf || !refSdf) {
+                setAlignmentSummary(currentLang === 'de' ? "Beide 3D-Modelle müssen geladen sein." : "Load both 3D models first.");
+                return;
+            }
+            try {
+                const result = window.MolGeo.alignSdfs(basicSdf, refSdf);
+                alignedRefSdf = result.sdf;
+                alignmentData = result;
+                const quality = result.strict ? "" : (currentLang === 'de' ? " · vereinfachte Bindungszuordnung" : " · simplified bond mapping");
+                const limited = result.limited ? (currentLang === 'de' ? " · nicht alle symmetrischen Zuordnungen geprüft" : " · some symmetric mappings unchecked") : "";
+                const stereo = /[@\\/]/.test(currentSmiles) ? (currentLang === 'de' ? " · Stereochemie separat kontrollieren" : " · verify stereochemistry separately") : "";
+                setAlignmentSummary((currentLang === 'de' ? "Automatisch ausgerichtet: " : "Auto-aligned: ") +
+                    "RMSD = " + result.rmsd.toFixed(3) + " Å · " + result.atomCount +
+                    (currentLang === 'de' ? " schwere Atome" : " heavy atoms") + quality + limited + stereo +
+                    (currentLang === 'de' ? ". Nur geometrischer Vergleich, kein Docking oder QM." : ". Geometry only, not docking or QM."));
+            } catch (error) {
+                alignedRefSdf = ""; alignmentData = null;
+                setAlignmentSummary((currentLang === 'de' ? "Keine sichere automatische Überlagerung: " : "Could not align reliably: ") +
+                    error.message + (currentLang === 'de' ? " Beide Modelle bleiben separat betrachtbar." : " Both models remain viewable."));
+            }
+            if (redraw) {
+                resetTransforms();
+                renderModels(true);
+            }
+        }
+
+        function resetAutoAlignment() {
+            alignedRefSdf = ""; alignmentData = null;
+            setAlignmentSummary(currentLang === 'de' ? "Automatische Ausrichtung zurückgesetzt; beide Modelle bleiben unabhängig zentriert." :
+              "Auto-alignment reset; both structures remain centered independently.");
+            resetTransforms(); renderModels(true);
+        }
+
         function setDisplayMode(mode) {
             currentDisplayMode = mode;
-            ['basic', 'ref', 'overlay'].forEach(m => {
-                document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1)).className = m === mode ? "mode-toggle-btn mode-active px-4 py-2 text-xs uppercase" : "mode-toggle-btn mode-inactive px-4 py-2 text-xs uppercase";
+            ['basic', 'ref', 'side', 'overlay'].forEach(m => {
+                document.getElementById('tgl' + m.charAt(0).toUpperCase() + m.slice(1)).className =
+                    m === mode ? "mode-toggle-btn mode-active px-3 py-2 text-xs" : "mode-toggle-btn mode-inactive px-3 py-2 text-xs";
             });
             const btnSurf = document.getElementById('btnSurface');
-            if (mode === 'overlay') { document.getElementById('alignmentPanel').classList.remove('hidden'); btnSurf.classList.add('hidden'); syncSlidersToState(); }
-            else { document.getElementById('alignmentPanel').classList.add('hidden'); btnSurf.classList.remove('hidden'); if(mouseDockingActive) toggleMouseDocking(); }
-            renderModels(false); clearMeasurements();
+            if (mode === 'overlay') {
+                document.getElementById('alignmentPanel').classList.remove('hidden');
+                btnSurf.classList.add('hidden');
+                syncSlidersToState();
+            } else {
+                document.getElementById('alignmentPanel').classList.add('hidden');
+                if (mode === 'side') btnSurf.classList.add('hidden'); else btnSurf.classList.remove('hidden');
+                if (mouseDockingActive) toggleMouseDocking();
+            }
+            renderModels(true); clearMeasurements();
         }
 
         function toggleSurface() { showSurface = !showSurface; updateSurfaceButtonUI(); renderModels(false); }
@@ -484,20 +531,33 @@
             let savedView = viewer.getView(); viewer.clear();
             const style = document.getElementById('styleSelect').value;
             let getStyle = (isRef) => {
-                let c = (isRef && currentDisplayMode === 'overlay') ? 'cyanCarbon' : 'lightgreyCarbon';
+                let c = (isRef && ['overlay','side'].includes(currentDisplayMode)) ? 'cyanCarbon' : 'lightgreyCarbon';
                 if(style === 'ballAndStick') return { stick: { radius: 0.15, colorscheme: c }, sphere: { scale: 0.3, colorscheme: c } };
                 if(style === 'stick') return { stick: { radius: 0.25, colorscheme: c } };
                 if(style === 'sphere') return { sphere: { scale: 1.0, colorscheme: c } };
                 if(style === 'line') return { line: { linewidth: 3, colorscheme: c } };
             };
-            let renderBasic = basicSdf ? transformSDF(basicSdf, transforms.basic) : "";
-            let renderRef = refSdf ? transformSDF(refSdf, transforms.ref) : "";
-            if (renderBasic && (currentDisplayMode === 'basic' || currentDisplayMode === 'overlay')) {
+            // Independent 3D models are centered at their heavy-atom centroids.
+            // Side-by-side rendering uses offset copies for one synchronized viewing angle.
+            let sideOffset = 0;
+            if (currentDisplayMode === 'side' && basicSdf && refSdf) {
+                try {
+                    const models = [window.MolGeo.parseSdf(basicSdf), window.MolGeo.parseSdf(refSdf)];
+                    const radii = models.map(m => Math.max(...m.atoms.map(a => Math.hypot(...a.p))));
+                    sideOffset = Math.max(3.4, (radii[0] + radii[1]) / 2 + 1.8);
+                } catch (error) { sideOffset = 5; }
+            }
+            const basicTransform = { ...transforms.basic, tx: transforms.basic.tx - sideOffset };
+            const refTransform = { ...transforms.ref, tx: transforms.ref.tx + sideOffset };
+            let renderBasic = basicSdf ? transformSDF(basicSdf, basicTransform) : "";
+            const displayedRef = currentDisplayMode === 'overlay' && alignedRefSdf ? alignedRefSdf : refSdf;
+            let renderRef = displayedRef ? transformSDF(displayedRef, refTransform) : "";
+            if (renderBasic && ['basic','overlay','side'].includes(currentDisplayMode)) {
                 viewer.addModel(renderBasic, "sdf"); viewer.setStyle({model: 0}, getStyle(false));
                 if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'lightgreyCarbon'}, {model: 0});
             }
-            if (renderRef && (currentDisplayMode === 'ref' || currentDisplayMode === 'overlay')) {
-                viewer.addModel(renderRef, "sdf"); let mIdx = (currentDisplayMode === 'overlay' && renderBasic) ? 1 : 0;
+            if (renderRef && ['ref','overlay','side'].includes(currentDisplayMode)) {
+                viewer.addModel(renderRef, "sdf"); let mIdx = (['overlay','side'].includes(currentDisplayMode) && renderBasic) ? 1 : 0;
                 viewer.setStyle({model: mIdx}, getStyle(true));
                 if(showSurface && currentDisplayMode !== 'overlay') viewer.addSurface($3Dmol.SurfaceType.VDW, {opacity: 0.6, colorscheme: 'cyanCarbon'}, {model: mIdx});
             }
@@ -509,10 +569,10 @@
         function toggleMouseDocking() {
             mouseDockingActive = !mouseDockingActive; const btn = document.getElementById('btnMouseDocking'); const glass = document.getElementById('dockingGlass'); const sliders = document.getElementById('sliderGroup');
             if (mouseDockingActive) {
-                btn.innerText = translations[currentLang].btn_docking_on; btn.className = "bg-green-500 border border-green-400 hover:bg-green-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors shadow-[0_0_10px_rgba(34,197,94,0.5)]";
+                btn.innerText = translations[currentLang].btn_docking_on; btn.className = "fine-toggle border px-3 py-2 rounded-lg font-bold text-xs transition-colors";
                 glass.classList.remove('hidden'); sliders.classList.remove('opacity-50', 'pointer-events-none'); if(measureMode) toggleMeasureMode(); 
             } else {
-                btn.innerText = translations[currentLang].btn_docking_off; btn.className = "bg-indigo-700 border border-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase transition-colors";
+                btn.innerText = translations[currentLang].btn_docking_off; btn.className = "fine-toggle border px-3 py-2 rounded-lg font-bold text-xs transition-colors";
                 glass.classList.add('hidden'); sliders.classList.add('opacity-50', 'pointer-events-none');
             }
         }
