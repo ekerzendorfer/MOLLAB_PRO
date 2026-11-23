@@ -21,6 +21,11 @@ for (const smiles of samples) {
 }
 const free = handoff.readLink(handoff.makeLink(base,{smiles:"O",name:"Wasser",context:"frei"}));
 assert.equal(free.returnUrl, "https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/#frei");
+const second=handoff.readLink(handoff.makeLink(base,{smiles:"S",name:"Schwefelwasserstoff",context:"MW-002"}));
+assert.equal(second.smiles,"S");
+assert.equal(second.context,"MW-002");
+assert.equal(second.returnUrl,"https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/?case=MW-002#aufgabe",
+  "MW-002 should return to its own guided case rather than MW-001");
 assert.equal(handoff.readLink(base), null, "normal MOLLAB launch must remain unchanged");
 
 const untrusted = new URL(handoff.makeLink(base,{smiles:"CCO",name:"Ethanol",context:"MW-001"}));
