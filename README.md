@@ -1,6 +1,6 @@
 # MOLLAB PRO – Molekülgeometrie und 3D-Vergleich
 
-**Version:** v0.2.1 (23.11.2026) · CHEMIE mit KI · Browser-App für den Chemieunterricht
+**Version:** v0.2.2 (23.11.2026) · CHEMIE mit KI · Browser-App für den Chemieunterricht
 
 Die Anwendung verbindet **2D-Molekülskizzen (JSME)** mit **interaktiven 3D-Modellen (3Dmol.js)** und einfachen molekularen Deskriptoren aus RDKit.js.
 
@@ -67,3 +67,13 @@ https://ekerzendorfer.github.io/MOLLAB_PRO/?smiles=CCO&name=Ethanol&source=molek
 - Für große Moleküle (etwa Calicheamicin) kann die externe 3D-Erzeugung scheitern; dafür steht das leistungsfähigere MOL_LAB-Colab-Notebook zur Verfügung.
 
 Der Link kann auch weiterhin ohne Parameter geöffnet werden. Für den vollständigen Browser-Test siehe [Übergabeabnahme in der Werkstatt](https://github.com/ekerzendorfer/MOLEKUELWERKSTATT/blob/main/docs/HANDOFF_V0.2.md).
+
+## V0.2.2 – sichere Rückkehr zu fünf Forschungswegen
+
+Der Übergabevertrag unterstützt nach wie vor die freie Nutzung und zusätzlich genau diese fünf Werkstatt-Aufgaben: `MW-001`, `MW-002`, `MW-009`, `MW-015`, `MW-024`. Die Rückadresse wird **aus einer festen Allowlist abgeleitet** und verweist jeweils auf `https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/?case=<ID>#aufgabe`; MW-001 nutzt aus Kompatibilitätsgründen `#aufgabe` ohne Parameter.
+
+- MW-009: Propanal/Aceton (`CCC=O`, `CC(=O)C`)
+- MW-015: CO₂/Wasser/NH₃/CH₄ (jeweils separat wählbar)
+- MW-024: Cyclohexan (`C1CCCCC1`)
+
+Die chemische 2D-/3D- und Geometriefunktion von MOLLAB_PRO bleibt unverändert. Der neue Code erweitert nur die sichere Rückverknüpfung, **nicht** die Berechnungen. Auch jetzt werden weder eigene Protokollnotizen noch numerische Ergebnisse übertragen. Die URL-Rundläufe sind in `tests/handoff.test.cjs` geprüft.
