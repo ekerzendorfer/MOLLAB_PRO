@@ -9,6 +9,7 @@
     <script type="text/javascript" src="https://jsme-editor.github.io/dist/jsme/jsme.nocache.js"></script>
     <script src="https://unpkg.com/@rdkit/rdkit/dist/RDKit_minimal.js"></script>
     <script src="./geometry-alignment.js?v=0.2.0"></script>
+    <script src="./molecule-handoff.js?v=0.2.1"></script>
 
     <style>
         .step-active { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
@@ -46,6 +47,15 @@
         .alignment-actions .auto:hover{background:#07516f}
         .alignment-actions .reset{border:1px solid #a4c6d7;background:white;color:#145774}
         .comparison-hint{font-size:.78rem;color:#45738c;line-height:1.45;margin:8px 0 0}
+        .handoff-banner{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap;
+            padding:14px 18px;border:1px solid #abccdf;background:#e8f4f8;border-radius:14px;margin:-10px 0 23px;
+            color:#143e58;font-size:.9rem}
+        .handoff-banner strong{display:block;margin:0 0 3px;font-size:1rem}
+        .handoff-banner p{margin:0;max-width:850px}
+        .handoff-banner a{display:inline-flex;align-items:center;gap:8px;min-height:39px;padding:8px 12px;
+            border:1px solid #9cbfd1;border-radius:10px;text-decoration:none;font-weight:750;color:#155678;background:white;white-space:nowrap}
+        .handoff-banner a:hover{background:#dff0f8}
+        .handoff-banner.is-error{border-color:#e7be9f;background:#fff6ec;color:#7b451d}
         @media(max-width:1024px){#jsme_container{height:410px!important;min-height:410px}.viewer-container{height:510px}}
         @media(max-width:640px){#jsme_container{height:365px!important;min-height:365px}.viewer-container{height:430px}.app-hero{border-radius:18px}}
     </style>
@@ -71,6 +81,11 @@
                 </div>
             </div>
         </header>
+
+        <aside id="handoffBanner" class="handoff-banner hidden" aria-live="polite" aria-label="Molekülübernahme">
+            <div><strong id="handoffTitle">Molekül übernehmen</strong><p id="handoffMessage">SMILES wird in den 2D-Editor geladen.</p></div>
+            <a id="handoffReturn" class="hidden" href="https://ekerzendorfer.github.io/MOLEKUELWERKSTATT/#frei">← Zur MOLEKÜL-WERKSTATT</a>
+        </aside>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div class="lg:col-span-5 space-y-5">
@@ -278,9 +293,78 @@
             if(measureMode) mBtn.innerText = translations[lang].btn_measure_on; else mBtn.innerText = translations[lang].btn_measure_off;
             let dBtn = document.getElementById('btnMouseDocking');
             if(mouseDockingActive) dBtn.innerText = translations[lang].btn_docking_on; else dBtn.innerText = translations[lang].btn_docking_off;
+            updateHandoffBanner();
         }
 
         let jsmeApplet = null, viewer = null, currentSmiles = "";
+        const incomingHandoff = window.MoleculeHandoff ? window.MoleculeHandoff.readLink(window.location.href) : null;
+        let handoffPhase = incomingHandoff ? "pending" : "none";
+        let handoffError = "";
+        function updateHandoffBanner() {
+            const banner = document.getElementById('handoffBanner');
+            if (!incomingHandoff) return;
+            banner.classList.remove('hidden');
+            const german = currentLang !== 'en';
+            const title = document.getElementById('handoffTitle');
+            const message = document.getElementById('handoffMessage');
+            const ret = document.getElementById('handoffReturn');
+            if (incomingHandoff.returnUrl) {
+                ret.href = incomingHandoff.returnUrl; // Only the fixed, whitelisted workshop URL.
+                ret.classList.remove('hidden');
+                ret.textContent = german ? "← Zur MOLEKÜL-WERKSTATT" : "← Back to Molecule Workshop";
+            } else ret.classList.add('hidden');
+            banner.classList.toggle('is-error', handoffPhase === "error" || handoffPhase === "invalid");
+            title.textContent = incomingHandoff.fromWerkstatt ?
+                (german ? "Übergabe aus der MOLEKÜL-WERKSTATT" : "Molecule Workshop handoff") :
+                (german ? "Molekül aus einem Link" : "Molecule from a link");
+            const name = incomingHandoff.name;
+            if (handoffPhase === "invalid" || handoffPhase === "error") {
+                message.textContent = (german ? "Struktur konnte nicht übernommen werden: " : "Could not import molecule: ") +
+                    (handoffError || incomingHandoff.error) +
+                    (german ? " Du kannst den 2D-Editor weiterhin manuell verwenden." : " You can still draw in the 2D editor.");
+            } else if (handoffPhase === "loaded") {
+                message.textContent = (german ? "„" + name + "“ wurde in den 2D-Editor übernommen. " +
+                    "Für die räumliche Darstellung auf „3D-Modell A erzeugen“ klicken." :
+                    "“" + name + "” is loaded into the 2D editor. Click “Generate model A” for 3D.");
+            } else {
+                message.textContent = (german ? "„" + name + "“ wird in den 2D-Editor übertragen …" :
+                    "Importing “" + name + "” into the 2D editor …");
+            }
+        }
+        function tryImportHandoff() {
+            if (!incomingHandoff || handoffPhase !== "pending") return;
+            if (!incomingHandoff.ok) {
+                handoffPhase = "invalid"; updateHandoffBanner(); return;
+            }
+            // JSME and 3Dmol initialize independently; getSmiles needs both.
+            if (!jsmeApplet || !viewer) return;
+            handoffPhase = "loading";
+            updateHandoffBanner();
+            try {
+                jsmeApplet.readGenericMolecularInput(incomingHandoff.smiles);
+            } catch (error) {
+                handoffError = error.message || String(error);
+                handoffPhase = "error"; updateHandoffBanner(); return;
+            }
+            function checkImport(tries) {
+                try {
+                    if (jsmeApplet.smiles()) {
+                        getSmiles(); // Populates the normal analysis path, but DOES NOT start 3D generation.
+                        if (!currentSmiles) throw Error("Kein SMILES im Editor verfügbar.");
+                        handoffPhase = "loaded"; updateHandoffBanner();
+                    } else if (tries < 5) {
+                        setTimeout(function() { checkImport(tries + 1); }, 150);
+                    } else {
+                        handoffError = "Der 2D-Editor konnte den SMILES nicht einlesen.";
+                        handoffPhase = "error"; updateHandoffBanner();
+                    }
+                } catch (error) {
+                    handoffError = error.message || String(error);
+                    handoffPhase = "error"; updateHandoffBanner();
+                }
+            }
+            setTimeout(function() { checkImport(0); }, 80);
+        }
         let basicSdf = "", refSdf = "", alignedRefSdf = "", alignmentData = null;
         let currentDisplayMode = "basic";
         let measureMode = false, showSurface = false, isWhiteBg = false, isFullscreen = false, clickedAtoms = [];
@@ -295,11 +379,15 @@
             status.classList.replace('bg-slate-50', 'bg-green-50');
         }).catch(() => { document.getElementById('rdkitStatus').innerText = translations[currentLang].rdkit_error; });
 
-        function jsmeOnLoad() { jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {"options" : "query,nocanonize,hydrogens"}); }
+        function jsmeOnLoad() {
+            jsmeApplet = new JSApplet.JSME("jsme_container", "100%", "100%", {"options" : "query,nocanonize,hydrogens"});
+            tryImportHandoff();
+        }
 
         window.onload = () => {
             viewer = $3Dmol.createViewer(document.getElementById('viewer3D'), { backgroundColor: '#0f172a' });
             setupMouseDocking(); setLang('de');
+            tryImportHandoff();
         };
 
         function clean2D() { if (jsmeApplet && jsmeApplet.smiles()) jsmeApplet.readGenericMolecularInput(jsmeApplet.smiles()); }
